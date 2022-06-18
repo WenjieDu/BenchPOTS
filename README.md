@@ -1,11 +1,18 @@
-# BenchPOTS
+<p align="center">
+<a href="https://github.com/WenjieDu/BenchPOTS">
+    <img src="https://pypots.com/figs/pypots_logos/BenchPOTS_logo_F5BG.svg" width="80%">
+</a>
+</p>
 
-A Benchmark for data mining on Partially-Observed Time Series (POTS)
 
-## Preliminaries
+## Downstream tasks
 
-PyPOTS should have enough models/algorithms for benchmarking.
+classification metric
 
-TSDB should provide dozens of ready-to-use datasets.
 
-PyCorruptor should provide different missing patterns.
+Predictive Score/Forecasting Metric 
+
+
+clustering metric: t-SNE
+
+
