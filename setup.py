@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-from pypots import __version__
+from benchpots import __version__
 
 with open("./README.md", encoding="utf-8") as f:
     README = f.read()
