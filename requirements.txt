@@ -1,8 +1,6 @@
+h5py
 numpy
 scikit-learn
-matplotlib
-scipy
-h5py
-torch
-tensorboard
+pygrinder >=0.4
+tsdb >=0.2
 pypots
