@@ -1,10 +1,11 @@
 """
-
+The preprocessing function of the dataset PhysionNet2012 for BenchPOTS.
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+import numpy as np
 import pandas as pd
 import tsdb
 from sklearn.model_selection import train_test_split
@@ -12,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 def preprocess_physionet2012():
-    """Generate a fully-prepared PhysioNet-2012 dataset for model testing.
+    """Generate a fully-prepared PhysioNet2012 dataset for benchmarking and validating POTS models.
 
     Returns
     -------
@@ -24,10 +25,6 @@ def preprocess_physionet2012():
                 The 11988 classification labels of all patients, indicating whether they were deceased.
 
     """
-    data = tsdb.load("physionet_2012")
-    data["static_features"].remove("ICUType")  # keep ICUType for now
-    # remove the other static features, e.g. age, gender
-    X = data["X"].drop(data["static_features"], axis=1)
 
     def apply_func(df_temp):  # pad and truncate to set the max length of samples as 48
         missing = list(set(range(0, 48)).difference(set(df_temp["Time"])))
@@ -39,26 +36,42 @@ def preprocess_physionet2012():
         df_temp = df_temp.iloc[:48]  # truncate
         return df_temp
 
+    # read the raw data
+    data = tsdb.load("physionet_2012")
+    data["static_features"].remove("ICUType")  # keep ICUType for now
+    # remove the other static features, e.g. age, gender
+    X = data["X"].drop(data["static_features"], axis=1)
     X = X.groupby("RecordID").apply(apply_func)
     X = X.drop("RecordID", axis=1)
     X = X.reset_index()
     ICUType = X[["RecordID", "ICUType"]].set_index("RecordID").dropna()
     X = X.drop(["level_1", "ICUType"], axis=1)
+    y = data["y"]
 
-    dataset = {
-        "X": X,
-        "y": data["y"],
-        "ICUType": ICUType,
-    }
-
-    # generate samples
-    X = dataset["X"]
-    y = dataset["y"]
-    ICUType = dataset["ICUType"]
-
+    # PhysioNet2012 is an imbalanced dataset, hence, separate positive and negative samples here for later splitting.
+    # This is to ensure positive and negative ratios are similar in train/val/test sets
     all_recordID = X["RecordID"].unique()
-    train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2)
-    train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2)
+    positive = (y == 1)["In-hospital_death"]
+    positive_sample_IDs = y.loc[positive].index.to_list()
+    negative_sample_IDs = np.setxor1d(all_recordID, positive_sample_IDs)
+    assert len(positive_sample_IDs) + len(negative_sample_IDs) == len(all_recordID)
+
+    # split the dataset into the train, val, and test sets
+    train_positive_set_ids, test_positive_set_ids = train_test_split(
+        positive_sample_IDs, test_size=0.2
+    )
+    train_positive_set_ids, val_positive_set_ids = train_test_split(
+        train_positive_set_ids, test_size=0.2
+    )
+    train_negative_set_ids, test_negative_set_ids = train_test_split(
+        negative_sample_IDs, test_size=0.2
+    )
+    train_negative_set_ids, val_negative_set_ids = train_test_split(
+        train_negative_set_ids, test_size=0.2
+    )
+    train_set_ids = np.concatenate([train_positive_set_ids, train_negative_set_ids])
+    val_set_ids = np.concatenate([val_positive_set_ids, val_negative_set_ids])
+    test_set_ids = np.concatenate([test_positive_set_ids, test_negative_set_ids])
     train_set_ids.sort()
     val_set_ids.sort()
     test_set_ids.sort()
@@ -66,6 +79,7 @@ def preprocess_physionet2012():
     val_set = X[X["RecordID"].isin(val_set_ids)].sort_values(["RecordID", "Time"])
     test_set = X[X["RecordID"].isin(test_set_ids)].sort_values(["RecordID", "Time"])
 
+    # remove useless columns and turn into numpy arrays
     train_set = train_set.drop(["RecordID", "Time"], axis=1)
     val_set = val_set.drop(["RecordID", "Time"], axis=1)
     test_set = test_set.drop(["RecordID", "Time"], axis=1)
@@ -100,7 +114,7 @@ def preprocess_physionet2012():
         test_ICUType.to_numpy(),
     )
 
-    data = {
+    processed_data_set = {
         "n_classes": 2,
         "n_steps": 48,
         "n_features": train_X.shape[-1],
@@ -116,4 +130,4 @@ def preprocess_physionet2012():
         "scaler": scaler,
     }
 
-    return data
+    return processed_data_set
