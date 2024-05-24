@@ -8,12 +8,26 @@ The preprocessing function of the dataset PhysionNet2012 for BenchPOTS.
 import numpy as np
 import pandas as pd
 import tsdb
+from pypots.utils.logging import logger
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+from .utils import create_missingness, print_final_dataset_info
 
-def preprocess_physionet2012():
+
+def preprocess_physionet2012(rate, pattern: str = "point", subset="all", **kwargs):
     """Generate a fully-prepared PhysioNet2012 dataset for benchmarking and validating POTS models.
+
+    Parameters
+    ----------
+    rate: float,
+        The additional missing rate to artificially add to the dataset.
+        If the dataset has original missing values, this rate won't be applied to them.
+        If the dataset originally has no missing data, this rate will be applied to the dataset.
+
+    pattern
+
+    subset
 
     Returns
     -------
@@ -32,17 +46,36 @@ def preprocess_physionet2012():
         df_temp = df_temp.iloc[:48]  # truncate
         return df_temp
 
+    all_subsets = ["all", "set-a", "set-b", "set-c"]
+    assert (
+        subset.lower() in all_subsets
+    ), f"subset should be one of {all_subsets}, but got {subset}"
+    assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
+
     # read the raw data
     data = tsdb.load("physionet_2012")
     data["static_features"].remove("ICUType")  # keep ICUType for now
+
+    if subset != "all":
+        df = data[subset]
+        X = df.reset_index(drop=True)
+        unique_ids = df["RecordID"].unique()
+        y = data[f"outcomes-{subset.split('-')[-1]}"]
+        y = y.loc[unique_ids]
+    else:
+        df = pd.concat([data["set-a"], data["set-b"], data["set-c"]], sort=True)
+        X = df.reset_index(drop=True)
+        unique_ids = df["RecordID"].unique()
+        y = pd.concat([data["outcomes-a"], data["outcomes-b"], data["outcomes-c"]])
+        y = y.loc[unique_ids]
+
     # remove the other static features, e.g. age, gender
-    X = data["X"].drop(data["static_features"], axis=1)
+    X = X.drop(data["static_features"], axis=1)
     X = X.groupby("RecordID").apply(apply_func)
     X = X.drop("RecordID", axis=1)
     X = X.reset_index()
     ICUType = X[["RecordID", "ICUType"]].set_index("RecordID").dropna()
     X = X.drop(["level_1", "ICUType"], axis=1)
-    y = data["y"]
 
     # PhysioNet2012 is an imbalanced dataset, hence, we separate positive and negative samples here for later splitting
     # This is to ensure positive and negative ratios are similar in train/val/test sets
@@ -133,4 +166,36 @@ def preprocess_physionet2012():
         "test_ICUType": test_ICUType.flatten(),
     }
 
+    if rate > 0:
+        logger.warning(
+            "Note that physionet_2012 has sparse observations in the time series, "
+            "hence we don't add additional missing values to the training dataset. "
+        )
+
+        # hold out ground truth in the original data for evaluation
+        val_X_ori = val_X
+        test_X_ori = test_X
+
+        # mask values in the validation set as ground truth
+        val_X = create_missingness(val_X, rate, pattern, **kwargs)
+        # mask values in the test set as ground truth
+        test_X = create_missingness(test_X, rate, pattern, **kwargs)
+
+        processed_dataset["train_X"] = train_X
+
+        processed_dataset["val_X"] = val_X
+        processed_dataset["val_X_ori"] = val_X_ori
+
+        processed_dataset["test_X"] = test_X
+        # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
+        processed_dataset["test_X_ori"] = np.nan_to_num(
+            test_X_ori
+        )  # fill NaNs for later error calc
+        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
+            test_X
+        )
+    else:
+        logger.warning("rate is 0, no missing values are artificially added.")
+
+    print_final_dataset_info(train_X, val_X, test_X)
     return processed_dataset
