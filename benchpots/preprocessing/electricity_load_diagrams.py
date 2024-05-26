@@ -39,15 +39,14 @@ def preprocess_electricity_load_diagrams(rate, n_steps, pattern: str = "point"):
     df["datetime"] = pd.to_datetime(df.index)
 
     unique_months = df["datetime"].dt.to_period("M").unique()
-    selected_as_train = unique_months[:28]  # use the first 28 months as train set
-    logger.info(f"months selected as train set are {selected_as_train}")
-    selected_as_val = unique_months[28:38]  # select the following 10 months as val set
-    logger.info(f"months selected as val set are {selected_as_val}")
-    selected_as_test = unique_months[
-        38:
-    ]  # select the left 11 months as test set, 2015-01 has only 1 day, so can be rounded to 10 months
+    selected_as_test = unique_months[:10]  # select first 10 months as test set
     logger.info(f"months selected as test set are {selected_as_test}")
-
+    selected_as_val = unique_months[
+        10:20
+    ]  # select the 11th - the 20th months as val set
+    logger.info(f"months selected as val set are {selected_as_val}")
+    selected_as_train = unique_months[20:]  # use left months as train set
+    logger.info(f"months selected as train set are {selected_as_train}")
     test_set = df[df["datetime"].dt.to_period("M").isin(selected_as_test)]
     val_set = df[df["datetime"].dt.to_period("M").isin(selected_as_val)]
     train_set = df[df["datetime"].dt.to_period("M").isin(selected_as_train)]
