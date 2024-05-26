@@ -12,7 +12,6 @@ import numpy as np
 import tsdb
 from pypots.data import sliding_window
 from pypots.utils.logging import logger
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from .utils import create_missingness, print_final_dataset_info
@@ -50,8 +49,11 @@ def preprocess_italy_air_quality(rate, n_steps, pattern: str = "point"):
     df = df.to_numpy()
 
     # split the dataset into train, validation, and test sets
-    train_set, test_set = train_test_split(df, test_size=0.2)
-    train_set, val_set = train_test_split(train_set, test_size=0.2)
+    all_n_steps = len(df)
+    val_test_len = round(all_n_steps * 0.2)
+    train_set = df[: -2 * val_test_len]
+    val_set = df[-2 * val_test_len : -val_test_len]
+    test_set = df[-val_test_len:]
 
     scaler = StandardScaler()
     train_set_X = scaler.fit_transform(train_set)
