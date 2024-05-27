@@ -15,7 +15,13 @@ from sklearn.preprocessing import StandardScaler
 from .utils import create_missingness, print_final_dataset_info
 
 
-def preprocess_physionet2012(rate, pattern: str = "point", subset="all", **kwargs):
+def preprocess_physionet2012(
+    rate,
+    pattern: str = "point",
+    subset="all",
+    features: list = None,
+    **kwargs,
+):
     """Generate a fully-prepared PhysioNet2012 dataset for benchmarking and validating POTS models.
 
     Parameters
@@ -28,6 +34,8 @@ def preprocess_physionet2012(rate, pattern: str = "point", subset="all", **kwarg
     pattern
 
     subset
+
+    features
 
     Returns
     -------
@@ -54,6 +62,7 @@ def preprocess_physionet2012(rate, pattern: str = "point", subset="all", **kwarg
 
     # read the raw data
     data = tsdb.load("physionet_2012")
+    all_features = set(data["set-a"].columns)
     data["static_features"].remove("ICUType")  # keep ICUType for now
 
     if subset != "all":
@@ -69,8 +78,29 @@ def preprocess_physionet2012(rate, pattern: str = "point", subset="all", **kwarg
         y = pd.concat([data["outcomes-a"], data["outcomes-b"], data["outcomes-c"]])
         y = y.loc[unique_ids]
 
-    # remove the other static features, e.g. age, gender
-    X = X.drop(data["static_features"], axis=1)
+    if (
+        features is None
+    ):  # if features are not specified, we use all features except the static features, e.g. age
+        X = X.drop(data["static_features"], axis=1)
+    else:  # if features are specified by users, only use the specified features
+        # check if the given features are valid
+        features_set = set(features)
+        if not all_features.issuperset(features_set):
+            intersection_feats = all_features.intersection(features_set)
+            difference = features_set.difference(intersection_feats)
+            raise ValueError(
+                f"Given features contain invalid features that not in the dataset: {difference}"
+            )
+        # check if the given features contain necessary features for preprocessing
+        if "RecordID" not in features:
+            features.append("RecordID")
+        if "ICUType" not in features:
+            features.append("ICUType")
+        if "Time" not in features:
+            features.append("Time")
+        # select the specified features finally
+        X = X[features]
+
     X = X.groupby("RecordID").apply(apply_func)
     X = X.drop("RecordID", axis=1)
     X = X.reset_index()
@@ -185,14 +215,22 @@ def preprocess_physionet2012(rate, pattern: str = "point", subset="all", **kwarg
 
         processed_dataset["val_X"] = val_X
         processed_dataset["val_X_ori"] = val_X_ori
+        val_X_indicating_mask = np.isnan(val_X_ori) ^ np.isnan(val_X)
+        logger.info(
+            f"{val_X_indicating_mask.sum()} values masked out in the val set as ground truth, "
+            f"take {val_X_indicating_mask.sum()/(~np.isnan(val_X_ori)).sum():.2%} of the original observed values"
+        )
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
         processed_dataset["test_X_ori"] = np.nan_to_num(
             test_X_ori
         )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
+        test_X_indicating_mask = np.isnan(test_X_ori) ^ np.isnan(test_X)
+        processed_dataset["test_X_indicating_mask"] = test_X_indicating_mask
+        logger.info(
+            f"{test_X_indicating_mask.sum()} values masked out in the test set as ground truth, "
+            f"take {test_X_indicating_mask.sum() / (~np.isnan(test_X_ori)).sum():.2%} of the original observed values"
         )
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
