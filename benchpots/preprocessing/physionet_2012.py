@@ -215,14 +215,22 @@ def preprocess_physionet2012(
 
         processed_dataset["val_X"] = val_X
         processed_dataset["val_X_ori"] = val_X_ori
+        val_X_indicating_mask = np.isnan(val_X_ori) ^ np.isnan(val_X)
+        logger.info(
+            f"{val_X_indicating_mask.sum()} values masked out in the val set as ground truth, "
+            f"take {val_X_indicating_mask.sum()/(~np.isnan(val_X_ori)).sum():.2%} of the original observed values"
+        )
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
         processed_dataset["test_X_ori"] = np.nan_to_num(
             test_X_ori
         )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
+        test_X_indicating_mask = np.isnan(test_X_ori) ^ np.isnan(test_X)
+        processed_dataset["test_X_indicating_mask"] = test_X_indicating_mask
+        logger.info(
+            f"{test_X_indicating_mask.sum()} values masked out in the test set as ground truth, "
+            f"take {test_X_indicating_mask.sum() / (~np.isnan(test_X_ori)).sum():.2%} of the original observed values"
         )
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
