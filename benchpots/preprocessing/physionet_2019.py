@@ -121,9 +121,9 @@ def preprocess_physionet2019(
     test_y = test_set[[time_feature, label_feature]]
 
     # remove useless columns and turn into numpy arrays
-    train_set = train_set.drop(["RecordID", "ICULOS"], axis=1)
-    val_set = val_set.drop(["RecordID", "ICULOS"], axis=1)
-    test_set = test_set.drop(["RecordID", "ICULOS"], axis=1)
+    train_set = train_set.drop(["RecordID", time_feature, label_feature], axis=1)
+    val_set = val_set.drop(["RecordID", time_feature, label_feature], axis=1)
+    test_set = test_set.drop(["RecordID", time_feature, label_feature], axis=1)
     train_X, val_X, test_X = (
         train_set.to_numpy(),
         val_set.to_numpy(),
