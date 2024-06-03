@@ -6,7 +6,7 @@
 # License: BSD-3-Clause
 
 
-from pygrinder import calc_missing_rate, mcar
+from pygrinder import calc_missing_rate, mcar, seq_missing, block_missing
 from pypots.utils.logging import logger
 
 
@@ -34,9 +34,9 @@ def create_missingness(X, rate, pattern, **kwargs):
     if pattern == "point":
         return mcar(X, rate)
     elif pattern == "subseq":
-        raise NotImplementedError("Subsequence missingness is not implemented yet.")
+        return seq_missing(X, rate, **kwargs)
     elif pattern == "block":
-        raise NotImplementedError("Block missingness is not implemented yet.")
+        return block_missing(X, factor=rate, **kwargs)
     else:
         raise ValueError(f"Unknown missingness pattern: {pattern}")
 

@@ -20,7 +20,12 @@ from sklearn.preprocessing import StandardScaler
 from .utils import create_missingness, print_final_dataset_info
 
 
-def preprocess_ucr_uea_datasets(set_name, rate, pattern: str = "point"):
+def preprocess_ucr_uea_datasets(
+    set_name,
+    rate,
+    pattern: str = "point",
+    **kwargs,
+):
     """Load dataset Beijing Multi-site Air Quality.
 
     Parameters
@@ -98,11 +103,11 @@ def preprocess_ucr_uea_datasets(set_name, rate, pattern: str = "point"):
         test_X_ori = test_X
 
         # mask values in the train set to keep the same with below validation and test sets
-        train_X = create_missingness(train_X, rate, pattern)
+        train_X = create_missingness(train_X, rate, pattern, **kwargs)
         # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, rate, pattern)
+        val_X = create_missingness(val_X, rate, pattern, **kwargs)
         # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, rate, pattern)
+        test_X = create_missingness(test_X, rate, pattern, **kwargs)
 
         processed_dataset["train_X"] = train_X
         processed_dataset["train_X_ori"] = train_X_ori
