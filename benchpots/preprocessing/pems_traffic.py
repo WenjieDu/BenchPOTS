@@ -99,12 +99,7 @@ def preprocess_pems_traffic(
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
-        processed_dataset["test_X_ori"] = np.nan_to_num(
-            test_X_ori
-        )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
-        )
+        processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
 

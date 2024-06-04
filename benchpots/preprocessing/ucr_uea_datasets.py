@@ -11,7 +11,6 @@ https://github.com/WenjieDu/TSDB/tree/main/dataset_profiles/ucr_uea_datasets
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
 import tsdb
 from pypots.utils.logging import logger
 from sklearn.model_selection import train_test_split
@@ -117,12 +116,7 @@ def preprocess_ucr_uea_datasets(
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
-        processed_dataset["test_X_ori"] = np.nan_to_num(
-            test_X_ori
-        )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
-        )
+        processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
 

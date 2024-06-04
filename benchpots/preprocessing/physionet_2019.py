@@ -3,7 +3,7 @@ The preprocessing function of the dataset PhysionNet2019 for BenchPOTS.
 dataset path https://physionet.org/content/challenge-2019/1.0.0/
 """
 
-# Created by Yiyuan Yang <yyy1997sjz@gmail.com>
+# Created by Yiyuan Yang <yyy1997sjz@gmail.com> and Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
 import numpy as np
@@ -100,6 +100,11 @@ def preprocess_physionet2019(
     X = X.drop("RecordID", axis=1)
     X = X.reset_index()
     X = X.drop(["level_1"], axis=1)
+    before_cols = X.columns.tolist()
+    X = X.dropna(axis=1, how="all")  # drop columns that are all NaN
+    after_cols = X.columns.tolist()
+    if before_cols != after_cols:
+        logger.info(f"Dropped all-nan columns: {set(before_cols) - set(after_cols)}")
 
     # split the dataset into the train, val, and test sets
     all_recordID = X["RecordID"].unique()
@@ -184,12 +189,14 @@ def preprocess_physionet2019(
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
-        processed_dataset["test_X_ori"] = np.nan_to_num(
-            test_X_ori
-        )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
+        processed_dataset["test_X_ori"] = test_X_ori
+
+        test_X_indicating_mask = np.isnan(test_X_ori) ^ np.isnan(test_X)
+        logger.info(
+            f"{test_X_indicating_mask.sum()} values masked out in the test set as ground truth, "
+            f"take {test_X_indicating_mask.sum() / (~np.isnan(test_X_ori)).sum():.2%} of the original observed values"
         )
+
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
 
