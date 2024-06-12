@@ -1,6 +1,6 @@
 """
-The preprocessing function of the dataset PhysionNet2019 for BenchPOTS.
-dataset path https://physionet.org/content/challenge-2019/1.0.0/
+Preprocessing func for the dataset PhysioNet2019.
+
 """
 
 # Created by Yiyuan Yang <yyy1997sjz@gmail.com> and Wenjie Du <wenjay.du@gmail.com>
@@ -17,31 +17,35 @@ from .utils import create_missingness, print_final_dataset_info
 
 
 def preprocess_physionet2019(
+    subset,
     rate,
     pattern: str = "point",
-    subset="all",
     features: list = None,
     **kwargs,
-):
-    """Generate a fully-prepared PhysioNet2019 dataset for benchmarking and validating POTS models.
+) -> dict:
+    """Load and preprocess the dataset PhysionNet2019.
 
     Parameters
     ----------
-    rate: float,
-        The additional missing rate to artificially add to the dataset.
-        If the dataset has original missing values, this rate won't be applied to them.
-        If the dataset originally has no missing data, this rate will be applied to the dataset.
+    subset:
+        The name of the subset dataset to be loaded.
+        Must be one of ['all', 'training_setA', 'training_setB'].
 
-    pattern
+    rate:
+        The missing rate.
 
-    subset
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
 
-    features
+    features:
+        The features to be used in the dataset.
+        If None, all features except the static features will be used.
 
     Returns
     -------
-    processed_dataset: dict,
-        A dictionary containing the processed PhysioNet-2019 dataset.
+    processed_dataset :
+        A dictionary containing the processed PhysionNet2019.
 
     """
 

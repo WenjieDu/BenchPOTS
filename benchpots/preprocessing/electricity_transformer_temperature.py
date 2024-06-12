@@ -1,14 +1,11 @@
 """
-Scripts related to dataset Beijing Multi-site Air Quality.
+Preprocessing func for the dataset ETT (Electricity Transformer Temperature).
 
-For more information please refer to:
-https://github.com/WenjieDu/TSDB/tree/main/dataset_profiles/beijing_multisite_air_quality
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
 import pandas as pd
 import tsdb
 from pypots.data import sliding_window
@@ -19,42 +16,46 @@ from .utils import create_missingness, print_final_dataset_info
 
 
 def preprocess_ett(
-    set_name,
+    subset,
     rate,
     n_steps,
     pattern: str = "point",
     **kwargs,
-):
-    """Load dataset Beijing Multi-site Air Quality.
+) -> dict:
+    """Load and preprocess the dataset ETT.
 
     Parameters
     ----------
-    set_name:
+    subset:
+        The name of the subset dataset to be loaded.
+        Must be one of ['ETTm1', 'ETTm2', 'ETTh1', 'ETTh2'].
 
-    rate :
+    rate:
         The missing rate.
 
     n_steps:
+        The number of time steps to in the generated data samples.
+        Also the window size of the sliding window.
 
     pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
 
     Returns
     -------
-    data : dict
-        A dictionary contains X:
-            X : pandas.DataFrame
-                The time-series data of Beijing Multi-site Air Quality.
+    processed_dataset :
+        A dictionary containing the processed ETT.
     """
 
-    all_set_names = ["ETTm1", "ETTm2", "ETTh1", "ETTh2"]
+    all_subset_names = ["ETTm1", "ETTm2", "ETTh1", "ETTh2"]
     assert (
-        set_name in all_set_names
-    ), f"set_name should be one of {all_set_names}, but got {set_name}"
+        subset in all_subset_names
+    ), f"subset_name should be one of {all_subset_names}, but got {subset}"
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
     assert n_steps > 0, f"sample_n_steps must be larger than 0, but got {n_steps}"
 
     data = tsdb.load("electricity_transformer_temperature")  # load all 4 sub datasets
-    df = data[set_name]
+    df = data[subset]
     feature_names = df.columns.tolist()
     df["datetime"] = pd.to_datetime(df.index)
 

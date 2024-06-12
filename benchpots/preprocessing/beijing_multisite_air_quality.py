@@ -1,14 +1,11 @@
 """
-Scripts related to dataset Beijing Multi-site Air Quality.
+Preprocessing func for the dataset Beijing Multi-site Air Quality.
 
-For more information please refer to:
-https://github.com/WenjieDu/TSDB/tree/main/dataset_profiles/beijing_multisite_air_quality
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
 import pandas as pd
 import tsdb
 from pypots.data import sliding_window
@@ -23,24 +20,27 @@ def preprocess_beijing_air_quality(
     n_steps,
     pattern: str = "point",
     **kwargs,
-):
-    """Load dataset Beijing Multi-site Air Quality.
+) -> dict:
+    """Load and preprocess the dataset Beijing Multi-site Air Quality.
 
     Parameters
     ----------
-    rate :
+    rate:
         The missing rate.
 
     n_steps:
+        The number of time steps to in the generated data samples.
+        Also the window size of the sliding window.
 
-    pattern
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
 
     Returns
     -------
-    data : dict
-        A dictionary contains X:
-            X : pandas.DataFrame
-                The time-series data of Beijing Multi-site Air Quality.
+    processed_dataset :
+        A dictionary containing the processed Beijing Multi-site Air Quality dataset.
+
     """
 
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"

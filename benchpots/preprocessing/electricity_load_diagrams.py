@@ -1,15 +1,11 @@
 """
-Scripts related to dataset Electricity Load Diagrams.
-
-For more information please refer to:
-https://github.com/WenjieDu/TSDB/tree/main/dataset_profiles/electricity_load_diagrams
+Preprocessing func for the dataset Electricity Load Diagrams.
 
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
 import pandas as pd
 import tsdb
 from pypots.data import sliding_window
@@ -24,14 +20,27 @@ def preprocess_electricity_load_diagrams(
     n_steps,
     pattern: str = "point",
     **kwargs,
-):
-    """
+) -> dict:
+    """Load and preprocess the dataset Electricity Load Diagrams.
+
+    Parameters
+    ----------
+    rate:
+        The missing rate.
+
+    n_steps:
+        The number of time steps to in the generated data samples.
+        Also the window size of the sliding window.
+
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
+
     Returns
     -------
-    data : dict
-        A dictionary contains X:
-            X : pandas.DataFrame
-                The time-series data of Electricity Load Diagrams.
+    processed_dataset :
+        A dictionary containing the processed Electricity Load Diagrams.
+
     """
 
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
