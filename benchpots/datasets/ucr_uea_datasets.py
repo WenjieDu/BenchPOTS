@@ -1,17 +1,11 @@
 """
-Scripts related to UCR&UAE data preprocessing http://timeseriesclassification.com/index.php
-
-Most of code comes from library tslearn https://github.com/tslearn-team/tslearn.
-
-For more information please refer to:
-https://github.com/WenjieDu/TSDB/tree/main/dataset_profiles/ucr_uea_datasets
+Preprocessing func for the UCR&UAE datasets.
 
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
 import tsdb
 from pypots.utils.logging import logger
 from sklearn.model_selection import train_test_split
@@ -21,37 +15,40 @@ from .utils import create_missingness, print_final_dataset_info
 
 
 def preprocess_ucr_uea_datasets(
-    set_name,
+    dataset_name,
     rate,
     pattern: str = "point",
     **kwargs,
-):
-    """Load dataset Beijing Multi-site Air Quality.
+) -> dict:
+    """Load and preprocess the dataset from UCR&UEA.
 
     Parameters
     ----------
-    set_name :
+    dataset_name:
+        The name of the UCR_UEA dataset to be loaded. Must start with 'ucr_uea_'.
+        Use tsdb.list() to get all available datasets.
 
-    rate :
+    rate:
         The missing rate.
 
-    pattern
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
 
     Returns
     -------
-    data : dict
-        A dictionary contains X:
-            X : pandas.DataFrame
-                The time-series data of Beijing Multi-site Air Quality.
+    processed_dataset :
+        A dictionary containing the processed UCR&UEA dataset.
+
     """
 
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
-    assert set_name.startswith(
+    assert dataset_name.startswith(
         "ucr_uea_"
-    ), f"set_name must start with 'ucr_uea_', but got {set_name}"
-    assert set_name in tsdb.list(), f"{set_name} is not in the database."
+    ), f"set_name must start with 'ucr_uea_', but got {dataset_name}"
+    assert dataset_name in tsdb.list(), f"{dataset_name} is not in TSDB database."
 
-    data = tsdb.load(set_name)
+    data = tsdb.load(dataset_name)
     X_train = data["X_train"]
     y_train = data["y_train"]
     X_test = data["X_test"]
@@ -117,12 +114,7 @@ def preprocess_ucr_uea_datasets(
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
-        processed_dataset["test_X_ori"] = np.nan_to_num(
-            test_X_ori
-        )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
-        )
+        processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
 

@@ -1,13 +1,13 @@
 """
-The preprocessing function of the dataset PeMS traffic.
+Preprocessing func for the dataset PeMS traffic.
 
-Refer to https://pems.dot.ca.gov
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
+import hashlib
+
 import pandas as pd
 from pypots.data import sliding_window
 from pypots.utils.logging import logger
@@ -22,18 +22,37 @@ def preprocess_pems_traffic(
     n_steps,
     pattern: str = "point",
     **kwargs,
-):
-    """
+) -> dict:
+    """Load and preprocess the dataset PeMS traffic.
+
+    Parameters
+    ----------
+    file_path:
+        The path to the dataset csv file.
+
+    rate:
+        The missing rate.
+
+    n_steps:
+        The number of time steps to in the generated data samples.
+        Also the window size of the sliding window.
+
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
+
     Returns
     -------
-    data : dict
-        A dictionary contains X:
-            X : pandas.DataFrame
-                The time-series data of Electricity Load Diagrams.
+    processed_dataset :
+        A dictionary containing the processed PeMS traffic.
     """
 
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
     assert n_steps > 0, f"sample_n_steps must be larger than 0, but got {n_steps}"
+
+    with open(file_path, "rb") as f:
+        md5_hash = hashlib.md5(f.read()).hexdigest()
+        assert md5_hash == "a62d8f2cd2c6acaaaa6f7aa819e378c0"
 
     df = pd.read_csv(file_path)
 
@@ -99,12 +118,7 @@ def preprocess_pems_traffic(
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
-        processed_dataset["test_X_ori"] = np.nan_to_num(
-            test_X_ori
-        )  # fill NaNs for later error calc
-        processed_dataset["test_X_indicating_mask"] = np.isnan(test_X_ori) ^ np.isnan(
-            test_X
-        )
+        processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
 

@@ -11,14 +11,19 @@ from pypots.utils.logging import logger
 
 
 def create_missingness(X, rate, pattern, **kwargs):
-    """
-        Create missingness in the data.
+    """Create missingness in the data.
 
     Parameters
     ----------
-    X
-    rate
-    pattern
+    X:
+        The input data.
+
+    rate:
+        The missing rate.
+
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
 
     Returns
     -------

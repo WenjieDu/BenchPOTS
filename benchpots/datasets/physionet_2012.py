@@ -1,5 +1,6 @@
 """
-The preprocessing function of the dataset PhysionNet2012 for BenchPOTS.
+Preprocessing func for the dataset PhysionNet2012.
+
 """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
@@ -16,31 +17,35 @@ from .utils import create_missingness, print_final_dataset_info
 
 
 def preprocess_physionet2012(
+    subset,
     rate,
     pattern: str = "point",
-    subset="all",
     features: list = None,
     **kwargs,
-):
-    """Generate a fully-prepared PhysioNet2012 dataset for benchmarking and validating POTS models.
+) -> dict:
+    """Load and preprocess the dataset PhysionNet2012.
 
     Parameters
     ----------
-    rate: float,
-        The additional missing rate to artificially add to the dataset.
-        If the dataset has original missing values, this rate won't be applied to them.
-        If the dataset originally has no missing data, this rate will be applied to the dataset.
+    subset:
+        The name of the subset dataset to be loaded.
+        Must be one of ['all', 'set-a', 'set-b', 'set-c'].
 
-    pattern
+    rate:
+        The missing rate.
 
-    subset
+    pattern:
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
 
-    features
+    features:
+        The features to be used in the dataset.
+        If None, all features except the static features will be used.
 
     Returns
     -------
-    processed_dataset: dict,
-        A dictionary containing the processed PhysioNet-2012 dataset.
+    processed_dataset :
+        A dictionary containing the processed PhysionNet2012.
 
     """
 
@@ -223,11 +228,9 @@ def preprocess_physionet2012(
 
         processed_dataset["test_X"] = test_X
         # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
-        processed_dataset["test_X_ori"] = np.nan_to_num(
-            test_X_ori
-        )  # fill NaNs for later error calc
+        processed_dataset["test_X_ori"] = test_X_ori
+
         test_X_indicating_mask = np.isnan(test_X_ori) ^ np.isnan(test_X)
-        processed_dataset["test_X_indicating_mask"] = test_X_indicating_mask
         logger.info(
             f"{test_X_indicating_mask.sum()} values masked out in the test set as ground truth, "
             f"take {test_X_indicating_mask.sum() / (~np.isnan(test_X_ori)).sum():.2%} of the original observed values"
