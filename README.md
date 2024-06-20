@@ -8,7 +8,7 @@
 
 <p align="center">
     <a href="https://docs.pypots.com/en/latest/install.html#reasons-of-version-limitations-on-dependencies">
-       <img alt="Python version" src="https://img.shields.io/badge/Python-v3.7+-E97040?logo=python&logoColor=white">
+       <img alt="Python version" src="https://img.shields.io/badge/Python-v3.8+-E97040?logo=python&logoColor=white">
     </a>
     <a href="https://github.com/WenjieDu/BenchPOTS/releases">
         <img alt="the latest release version" src="https://img.shields.io/github/v/release/wenjiedu/benchpots?color=EE781F&include_prereleases&label=Release&logo=github&logoColor=white">

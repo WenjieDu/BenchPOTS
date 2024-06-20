@@ -52,7 +52,7 @@ setup(
         "tsdb >=0.4",
         "pygrinder >=0.6",
     ],
-    python_requires=">=3.7.0",
+    python_requires=">=3.8.0",
     setup_requires=["setuptools>=38.6.0"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
