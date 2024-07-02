@@ -7,11 +7,11 @@ Preprocessing func for the UCR&UAE datasets.
 # License: BSD-3-Clause
 
 import tsdb
-from pypots.utils.logging import logger
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from .utils import create_missingness, print_final_dataset_info
+from ..utils.logging import logger, print_final_dataset_info
+from ..utils.missingness import create_missingness
 
 
 def preprocess_ucr_uea_datasets(
