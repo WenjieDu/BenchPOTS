@@ -6,9 +6,8 @@ Preprocessing func for the dataset PeMS traffic.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import hashlib
-
 import pandas as pd
+import tsdb
 from sklearn.preprocessing import StandardScaler
 
 from ..utils.logging import logger, print_final_dataset_info
@@ -17,7 +16,6 @@ from ..utils.sliding import sliding_window
 
 
 def preprocess_pems_traffic(
-    file_path,
     rate,
     n_steps,
     pattern: str = "point",
@@ -27,9 +25,6 @@ def preprocess_pems_traffic(
 
     Parameters
     ----------
-    file_path:
-        The path to the dataset csv file.
-
     rate:
         The missing rate.
 
@@ -50,11 +45,9 @@ def preprocess_pems_traffic(
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
     assert n_steps > 0, f"sample_n_steps must be larger than 0, but got {n_steps}"
 
-    with open(file_path, "rb") as f:
-        md5_hash = hashlib.md5(f.read()).hexdigest()
-        assert md5_hash == "a62d8f2cd2c6acaaaa6f7aa819e378c0"
-
-    df = pd.read_csv(file_path)
+    # read the raw data
+    data = tsdb.load("pems_traffic")
+    df = data["X"]
 
     feature_names = df.columns.tolist()
     feature_names.remove("date")
