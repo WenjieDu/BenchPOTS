@@ -49,6 +49,7 @@ setup(
         "numpy",
         "pandas",
         "scikit-learn",
+        "torch >=1.10",
         "tsdb >=0.4",
         "pygrinder >=0.6",
     ],

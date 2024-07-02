@@ -8,11 +8,11 @@ Preprocessing func for the dataset PeMS traffic.
 
 import pandas as pd
 import tsdb
-from pypots.data import sliding_window
-from pypots.utils.logging import logger
 from sklearn.preprocessing import StandardScaler
 
-from .utils import create_missingness, print_final_dataset_info
+from ..utils.logging import logger, print_final_dataset_info
+from ..utils.missingness import create_missingness
+from ..utils.sliding import sliding_window
 
 
 def preprocess_pems_traffic(
@@ -46,7 +46,7 @@ def preprocess_pems_traffic(
     assert n_steps > 0, f"sample_n_steps must be larger than 0, but got {n_steps}"
 
     # read the raw data
-    data = tsdb.load("physionet_2012")
+    data = tsdb.load("pems_traffic")
     df = data["X"]
 
     feature_names = df.columns.tolist()
