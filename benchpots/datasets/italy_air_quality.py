@@ -7,11 +7,11 @@ Preprocessing func for the dataset Italy Air Quality.
 # License: BSD-3-Clause
 
 import tsdb
-from pypots.data import sliding_window
-from pypots.utils.logging import logger
 from sklearn.preprocessing import StandardScaler
 
-from .utils import create_missingness, print_final_dataset_info
+from ..utils.logging import logger, print_final_dataset_info
+from ..utils.missingness import create_missingness
+from ..utils.sliding import sliding_window
 
 
 def preprocess_italy_air_quality(
