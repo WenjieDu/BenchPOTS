@@ -28,6 +28,24 @@
     <a href="https://github.com/WenjieDu/BenchPOTS/network/members">
         <img alt="GitHub Repo forks" src="https://img.shields.io/github/forks/wenjiedu/benchpots?logo=forgejo&logoColor=black&label=Forks">
     </a>
+    <a href="https://codeclimate.com/github/WenjieDu/BenchPOTS">
+        <img alt="Code Climate maintainability" src="https://img.shields.io/codeclimate/maintainability-percentage/WenjieDu/BenchPOTS?color=3C7699&label=Maintainability&logo=codeclimate">
+    </a>
+    <a href="https://coveralls.io/github/WenjieDu/BenchPOTS">
+        <img alt="Coveralls coverage" src="https://img.shields.io/coverallsCoverage/github/WenjieDu/BenchPOTS?branch=main&logo=coveralls&color=75C1C4&label=Coverage">
+    </a>
+    <a href="https://github.com/WenjieDu/BenchPOTS/actions/workflows/testing_ci.yml">
+        <img alt="GitHub Testing" src="https://img.shields.io/github/actions/workflow/status/wenjiedu/benchpots/testing_ci.yml?logo=circleci&color=C8D8E1&label=CI">
+    </a>
+    <a href="https://docs.pypots.com/en/latest/benchpots.html">
+        <img alt="Docs building" src="https://img.shields.io/readthedocs/pypots?logo=readthedocs&label=Docs&logoColor=white&color=395260">
+    </a>
+    <a href="https://anaconda.org/conda-forge/benchpots">
+        <img alt="Conda downloads" src="https://img.shields.io/endpoint?url=https://pypots.com/figs/downloads_badges/conda_benchpots_downloads.json">
+    </a>
+    <a href="https://pepy.tech/project/benchpots">
+        <img alt="PyPI downloads" src="https://img.shields.io/endpoint?url=https://pypots.com/figs/downloads_badges/pypi_benchpots_downloads.json">
+    </a>
 </p>
 
 To evaluate the performance of algorithms on POTS datasets, a benchmarking toolkit is necessary, hence the ecosystem library BenchPOTS is developed.
@@ -60,9 +78,9 @@ year={2023},
 }
 ```
 or
-> Wenjie Du. (2023).
+> Wenjie Du.
 > PyPOTS: a Python toolbox for data mining on Partially-Observed Time Series.
-> arXiv, abs/2305.18811. https://arxiv.org/abs/2305.18811
+> arXiv, abs/2305.18811, 2023.
 
 
 
