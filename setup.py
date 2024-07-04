@@ -50,7 +50,7 @@ setup(
         "pandas",
         "scikit-learn",
         "torch >=1.10",
-        "tsdb >=0.4",
+        "tsdb >=0.5",
         "pygrinder >=0.6",
     ],
     python_requires=">=3.8.0",
