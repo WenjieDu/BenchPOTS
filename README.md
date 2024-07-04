@@ -52,6 +52,29 @@ To evaluate the performance of algorithms on POTS datasets, a benchmarking toolk
 BenchPOTS provides the standard and unified preprocessing pipelines of a variety of POTS datasets.
 It supports a variety of evaluation tasks to help users understand the performance of different algorithms.
 
+
+## ❖ Usage Examples
+> [!IMPORTANT]
+> BenchPOTS is available on both <a alt='PyPI' href='https://pypi.python.org/pypi/benchpots'><img align='center' src='https://img.shields.io/badge/PyPI--lightgreen?style=social&logo=pypi'></a> 
+> and <a alt='Anaconda' href='https://anaconda.org/conda-forge/benchpots'><img align='center' src='https://img.shields.io/badge/Anaconda--lightgreen?style=social&logo=anaconda'></a>❗️
+> 
+> Install via pip:
+> > pip install benchpots
+> 
+> or install from source code:
+> > pip install `https://github.com/WenjieDu/BenchPOTS/archive/main.zip`
+>
+> or install via conda:
+> > conda install benchpots -c conda-forge
+
+```python
+import benchpots
+
+# Load PhysioNet2012 all three subsets and apply MCAR with 0.1 rate 
+benchpots.datasets.preprocess_physionet2012(subset="all", rate="0.1")
+
+```
+
 ## ❖ Citing BenchPOTS/PyPOTS
 The paper introducing PyPOTS is available [on arXiv](https://arxiv.org/abs/2305.18811),
 A short version of it is accepted by the 9th SIGKDD international workshop on Mining and Learning from Time Series ([MiLeTS'23](https://kdd-milets.github.io/milets2023/))).
