@@ -17,7 +17,7 @@ from ..utils.logging import logger
 def sliding_window(
     time_series: Union[np.ndarray, torch.Tensor],
     window_size: int,
-    stride: int,
+    stride: int = None,
     drop_last: bool = True,
 ) -> Union[np.ndarray, torch.Tensor, tuple]:
     """Generate time series samples with sliding window method, truncating windows from time-series data
@@ -48,6 +48,9 @@ def sliding_window(
         The generated time-series data samples of shape [seq_len//sliding_len, n_steps, n_features].
 
     """
+    stride = window_size if stride is None else stride
+
+    # check input
     assert len(time_series) > window_size, (
         f"time_series length {len(time_series)} is less than "
         f"window_size {window_size}. There is no space for sliding."
@@ -60,7 +63,6 @@ def sliding_window(
         f"Otherwise there will be gaps between samples."
     )
 
-    stride = window_size if stride is None else stride
     total_len = time_series.shape[0]
     start_indices = np.asarray(range(total_len // stride)) * stride
 
@@ -87,9 +89,10 @@ def sliding_window(
 
     if not drop_last:
         logger.info(
-            f"drop_last is set as False, the last sample is kept and will be returned independently."
+            "drop_last is set as False, the last sample is kept and will be returned independently."
         )
         return samples, time_series[start_indices[-1] + stride :]
+
     return samples
 
 
