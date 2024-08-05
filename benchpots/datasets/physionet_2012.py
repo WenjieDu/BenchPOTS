@@ -21,6 +21,7 @@ def preprocess_physionet2012(
     rate,
     pattern: str = "point",
     features: list = None,
+    use_cache: bool = True,
     **kwargs,
 ) -> dict:
     """Load and preprocess the dataset PhysionNet2012.
@@ -66,7 +67,7 @@ def preprocess_physionet2012(
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
 
     # read the raw data
-    data = tsdb.load("physionet_2012")
+    data = tsdb.load("physionet_2012", use_cache)
     all_features = set(data["set-a"].columns)
     data["static_features"].remove("ICUType")  # keep ICUType for now
 
