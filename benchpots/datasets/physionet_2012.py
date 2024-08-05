@@ -63,6 +63,12 @@ def preprocess_physionet2012(
     assert (
         subset.lower() in all_subsets
     ), f"subset should be one of {all_subsets}, but got {subset}"
+
+    if type(rate) is str:
+        try:
+            rate = float(rate)
+        except ValueError:
+            print(f"Rate is not valid float number.")
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
 
     # read the raw data
