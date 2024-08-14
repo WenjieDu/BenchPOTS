@@ -7,8 +7,9 @@ Preprocessing func for the UCR&UAE datasets.
 # License: BSD-3-Clause
 
 import tsdb
+from pandas.api.types import is_string_dtype
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 from ..utils.logging import logger, print_final_dataset_info
 from ..utils.missingness import create_missingness
@@ -54,6 +55,12 @@ def preprocess_ucr_uea_datasets(
     X_test = data["X_test"]
     y_test = data["y_test"]
 
+    le = None
+    if is_string_dtype(y_train):
+        le = LabelEncoder()
+        y_train = le.fit_transform(y_train)
+        y_test = le.transform(y_test)
+
     n_X_train = len(X_train)
 
     train_ids, val_ids = train_test_split(list(range(n_X_train)), test_size=0.2)
@@ -92,6 +99,9 @@ def preprocess_ucr_uea_datasets(
         "test_X": test_X,
         "test_y": y_test,
     }
+
+    if le is not None:
+        processed_dataset["label_encoder"] = le
 
     if rate > 0:
         # hold out ground truth in the original data for evaluation
