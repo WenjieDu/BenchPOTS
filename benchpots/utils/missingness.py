@@ -32,7 +32,7 @@ def create_missingness(X, rate, pattern, **kwargs):
 
     assert 0 < rate < 1, "rate must be in [0, 1)"
     assert (
-            pattern.lower() in supported_missing_pattern
+        pattern.lower() in supported_missing_pattern
     ), f"pattern must be one of {supported_missing_pattern}, but got {pattern}"
 
     if pattern == "point":
