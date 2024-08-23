@@ -58,6 +58,9 @@ version = { attr = "benchpots.version.__version__" }
 readme = { file = "README.md", content-type = "text/markdown" }
 dependencies = { file = "requirements.txt" }
 
+[tool.black]
+line-length = 120
+
 [tool.flake8]
 # People may argue that coding style is personal. This may be true if the project is personal and one works like a
 # hermit, but to PyPOTS and its community, the answer is NO.
@@ -69,6 +72,8 @@ dependencies = { file = "requirements.txt" }
 # who prefer the default setting can keep using 88 or 79 while coding. Please ensure your code lines not exceeding 120.
 max-line-length = 120
 # why ignore E203? Refer to https://github.com/PyCQA/pycodestyle/issues/373
+# why ignore E231? Bad trailing comma, conflict with Black
 extend-ignore = """
-    E203
+    E203,
+    E231,
 """
