@@ -249,6 +249,11 @@ def preprocess_random_walk(
     missing_rate : float, default=0.1
         The rate of randomly missing values to generate, should be in [0,1).
 
+    pattern :
+        The missing pattern to apply to the dataset.
+        Must be one of ['point', 'subseq', 'block'].
+
+
     Returns
     -------
     data: dict,
