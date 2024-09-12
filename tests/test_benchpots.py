@@ -9,6 +9,7 @@
 import unittest
 
 from benchpots.datasets import (
+    preprocess_random_walk,
     preprocess_physionet2012,
     preprocess_physionet2019,
     preprocess_ett,
@@ -20,6 +21,15 @@ from benchpots.datasets import (
 
 
 class TestBenchPOTS(unittest.TestCase):
+    def test_random_walk(self):
+        preprocess_random_walk(
+            n_steps=8,
+            n_features=5,
+            n_classes=2,
+            n_samples_each_class=100,
+            missing_rate=0.1,
+        )
+
     def test_physionet2012(self):
         preprocess_physionet2012(subset="set-a", rate=0.1)
 

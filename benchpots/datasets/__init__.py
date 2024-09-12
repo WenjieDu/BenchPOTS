@@ -14,6 +14,7 @@ from .physionet_2012 import preprocess_physionet2012
 from .physionet_2019 import preprocess_physionet2019
 from .ucr_uea_datasets import preprocess_ucr_uea_datasets
 from .solar_alabama import preprocess_solar_alabama
+from .random_walk import preprocess_random_walk
 
 __all__ = [
     "preprocess_physionet2012",
@@ -25,4 +26,5 @@ __all__ = [
     "preprocess_pems_traffic",
     "preprocess_ucr_uea_datasets",
     "preprocess_solar_alabama",
+    "preprocess_random_walk",
 ]

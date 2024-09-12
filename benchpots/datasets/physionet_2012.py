@@ -227,7 +227,6 @@ def preprocess_physionet2012(
         )
 
         processed_dataset["test_X"] = test_X
-        # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
         processed_dataset["test_X_ori"] = test_X_ori
 
         test_X_indicating_mask = np.isnan(test_X_ori) ^ np.isnan(test_X)

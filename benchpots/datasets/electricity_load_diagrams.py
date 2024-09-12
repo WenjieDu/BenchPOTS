@@ -108,7 +108,6 @@ def preprocess_electricity_load_diagrams(
         processed_dataset["val_X_ori"] = val_X_ori
 
         processed_dataset["test_X"] = test_X
-        # test_X_ori is for error calc, not for model input, hence mustn't have NaNs
         processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
