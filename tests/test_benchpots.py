@@ -8,6 +8,8 @@
 
 import unittest
 
+import torch
+
 from benchpots.datasets import (
     preprocess_random_walk,
     preprocess_physionet2012,
@@ -18,6 +20,7 @@ from benchpots.datasets import (
     preprocess_italy_air_quality,
     preprocess_ucr_uea_datasets,
 )
+from benchpots.utils import sliding_window, inverse_sliding_window
 
 
 class TestBenchPOTS(unittest.TestCase):
@@ -55,3 +58,16 @@ class TestBenchPOTS(unittest.TestCase):
             n_steps=24,
             pattern="point",
         )
+
+    def test_sliding(self):
+        torch_tensor = torch.randn(1024, 5)
+        samples = sliding_window(torch_tensor, 8)
+        assert len(samples.shape) == 3
+        inverse_result = inverse_sliding_window(samples, 8)
+        assert len(inverse_result.shape) == 2 and inverse_result.shape[0] == 1024
+
+        numpy_arr = torch_tensor.numpy()
+        samples = sliding_window(numpy_arr, 8)
+        assert len(samples.shape) == 3
+        inverse_result = inverse_sliding_window(samples, 8)
+        assert len(inverse_result.shape) == 2 and inverse_result.shape[0] == 1024
