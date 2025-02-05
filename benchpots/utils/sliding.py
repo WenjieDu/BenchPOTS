@@ -81,7 +81,7 @@ def sliding_window(
         sample_collector.append(time_series[idx : idx + window_size])
 
     if isinstance(time_series, torch.Tensor):
-        samples = torch.cat(sample_collector, dim=0)
+        samples = torch.stack(sample_collector, dim=0)
     elif isinstance(time_series, np.ndarray):
         samples = np.asarray(sample_collector).astype("float32")
     else:
