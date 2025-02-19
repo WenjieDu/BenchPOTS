@@ -71,7 +71,7 @@ It supports a variety of evaluation tasks to help users understand the performan
 import benchpots
 
 # Load PhysioNet2012 all three subsets and apply MCAR with 0.1 rate 
-benchpots.datasets.preprocess_physionet2012(subset="all", rate="0.1")
+benchpots.datasets.preprocess_physionet2012(subset="all", rate=0.1)
 
 ```
 
