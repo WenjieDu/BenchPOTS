@@ -38,8 +38,20 @@ def create_missingness(X, rate, pattern, **kwargs):
     if pattern == "point":
         return mcar(X, rate)
     elif pattern == "subseq":
-        return seq_missing(X, rate, **kwargs)
+        return seq_missing(
+            X,
+            rate,
+            kwargs["seq_len"],
+            kwargs["feature_idx"],
+            kwargs["step_idx"],
+        )
     elif pattern == "block":
-        return block_missing(X, factor=rate, **kwargs)
+        return block_missing(
+            X,
+            rate,
+            kwargs["block_len"],
+            kwargs["feature_idx"],
+            kwargs["step_idx"],
+        )
     else:
         raise ValueError(f"Unknown missingness pattern: {pattern}")
