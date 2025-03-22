@@ -9,6 +9,7 @@
 import unittest
 
 import torch
+from pygrinder import calc_missing_rate
 
 from benchpots.datasets import (
     preprocess_random_walk,
@@ -25,13 +26,43 @@ from benchpots.utils import sliding_window, inverse_sliding_window
 
 class TestBenchPOTS(unittest.TestCase):
     def test_random_walk(self):
-        preprocess_random_walk(
-            n_steps=8,
-            n_features=5,
-            n_classes=2,
-            n_samples_each_class=100,
-            missing_rate=0.1,
+        n_steps = 8
+        n_features = 5
+        n_classes = 2
+        n_samples_each_class = 100
+        missing_rate = 0.1
+        anomaly_rate = 0.1
+        dataset_wo_anomalies = preprocess_random_walk(
+            n_steps=n_steps,
+            n_features=n_features,
+            n_classes=n_classes,
+            n_samples_each_class=n_samples_each_class,
+            missing_rate=missing_rate,
         )
+        assert "train_anomaly_y" not in dataset_wo_anomalies.keys()
+        dataset_w_anomalies = preprocess_random_walk(
+            n_steps=n_steps,
+            n_features=n_features,
+            n_classes=n_classes,
+            n_samples_each_class=n_samples_each_class,
+            anomaly_rate=anomaly_rate,
+            missing_rate=missing_rate,
+        )
+        assert "train_anomaly_y" in dataset_w_anomalies.keys()
+        train_X = dataset_w_anomalies["train_X"]
+        val_X = dataset_w_anomalies["val_X"]
+        test_X = dataset_w_anomalies["test_X"]
+        trainset_size, trainset_n_steps, trainset_n_features = train_X.shape
+        valset_size, valset_n_steps, valset_n_features = val_X.shape
+        testset_size, testset_n_steps, testset_n_features = test_X.shape
+
+        assert trainset_size + valset_size + testset_size == n_classes * n_samples_each_class
+        assert trainset_n_steps == valset_n_steps == testset_n_steps == n_steps
+        assert trainset_n_features == valset_n_features == testset_n_features == n_features
+
+        assert round(calc_missing_rate(train_X), 1) == missing_rate * 2  # 'cause train set was masked twice
+        assert round(calc_missing_rate(val_X), 1) == missing_rate
+        assert round(calc_missing_rate(test_X), 1) == missing_rate
 
     def test_physionet2012(self):
         preprocess_physionet2012(subset="set-a", rate=0.1)
