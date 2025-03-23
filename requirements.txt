@@ -3,5 +3,5 @@ numpy
 pandas
 scikit-learn
 torch >=1.10
-tsdb >=0.6.1
-pygrinder >=0.6.2
+tsdb >=0.7.1
+pygrinder >=0.7
