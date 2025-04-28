@@ -28,8 +28,8 @@
     <a href="https://github.com/WenjieDu/BenchPOTS/network/members">
         <img alt="GitHub Repo forks" src="https://img.shields.io/github/forks/wenjiedu/benchpots?logo=forgejo&logoColor=black&label=Forks">
     </a>
-    <a href="https://codeclimate.com/github/WenjieDu/BenchPOTS">
-        <img alt="Code Climate maintainability" src="https://img.shields.io/codeclimate/maintainability-percentage/WenjieDu/BenchPOTS?color=3C7699&label=Maintainability&logo=codeclimate">
+    <a href="https://sonarcloud.io/component_measures?id=WenjieDu_BenchPOTS&metric=sqale_rating&view=list">
+        <img alt="maintainability" src="https://sonarcloud.io/api/project_badges/measure?project=WenjieDu_BenchPOTS&metric=sqale_rating">
     </a>
     <a href="https://coveralls.io/github/WenjieDu/BenchPOTS">
         <img alt="Coveralls coverage" src="https://img.shields.io/coverallsCoverage/github/WenjieDu/BenchPOTS?branch=main&logo=coveralls&color=75C1C4&label=Coverage">
@@ -40,11 +40,11 @@
     <a href="https://docs.pypots.com/en/latest/benchpots.html">
         <img alt="Docs building" src="https://img.shields.io/readthedocs/pypots?logo=readthedocs&label=Docs&logoColor=white&color=395260">
     </a>
-    <a href="https://anaconda.org/conda-forge/benchpots">
-        <img alt="Conda downloads" src="https://img.shields.io/endpoint?url=https://pypots.com/figs/downloads_badges/conda_benchpots_downloads.json">
+        <a href="https://anaconda.org/conda-forge/benchpots">
+        <img alt="Conda downloads" src="https://pypots.com/figs/downloads_badges/conda_benchpots_downloads.svg">
     </a>
     <a href="https://pepy.tech/project/benchpots">
-        <img alt="PyPI downloads" src="https://img.shields.io/endpoint?url=https://pypots.com/figs/downloads_badges/pypi_benchpots_downloads.json">
+        <img alt="PyPI downloads" src="https://pypots.com/figs/downloads_badges/pypi_benchpots_downloads.svg">
     </a>
 </p>
 
@@ -105,12 +105,3 @@ or
 > PyPOTS: a Python toolbox for data mining on Partially-Observed Time Series.
 > arXiv, abs/2305.18811, 2023.
 
-
-
-<details>
-<summary>🏠 Visits</summary>
-<a href="https://github.com/WenjieDu/BenchPOTS">
-    <img alt="BenchPOTS visits" align="left" src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FWenjieDu%2FBenchPOTS&count_bg=%23009A0A&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Visits%20since%20June%202024&edge_flat=false">
-</a>
-</details>
-<br>
