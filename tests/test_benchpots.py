@@ -20,6 +20,7 @@ from benchpots.datasets import (
     preprocess_beijing_air_quality,
     preprocess_italy_air_quality,
     preprocess_ucr_uea_datasets,
+    preprocess_wiener_hammerstein_system,
 )
 from benchpots.utils import sliding_window, inverse_sliding_window
 
@@ -89,6 +90,9 @@ class TestBenchPOTS(unittest.TestCase):
             n_steps=24,
             pattern="point",
         )
+    
+    def test_wiener_hammerstein_system(self):
+        preprocess_wiener_hammerstein_system(rate=0.1, n_steps=24, pattern="point")
 
     def test_sliding(self):
         torch_tensor = torch.randn(1024, 5)
