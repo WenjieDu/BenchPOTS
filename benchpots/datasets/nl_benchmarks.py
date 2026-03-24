@@ -15,7 +15,7 @@ from ..utils.missingness import create_missingness
 from ..utils.sliding import sliding_window
 
 
-def preprocess_nl_benchs(
+def preprocess_nl_benchmarks(
     dataset_name,
     rate,
     n_steps,
@@ -81,17 +81,17 @@ def preprocess_nl_benchs(
     else:
         raise ValueError(
             "dataset_name must be one of ["
-            "'EMPS', 'CED', 'WienerHammerBenchMark'," \
-            "'Silverbox', 'F16', 'ParWH', 'Cascaded_Tanks'," \
-            "'BoucWen', 'WienerHammerstein_Process_Noise', 'Industrial_robot'], " \
+            "'EMPS', 'CED', 'WienerHammerBenchMark',"
+            "'Silverbox', 'F16', 'ParWH', 'Cascaded_Tanks',"
+            "'BoucWen', 'WienerHammerstein_Process_Noise', 'Industrial_robot'], "
             f"but got {dataset_name}."
         )
-    
+
     if not isinstance(train_val, (tuple, list)):
         train_val = (train_val,)
     if not isinstance(test, (tuple, list)):
         test = (test,)
-    
+
     if dataset_name in ["BoucWen", "WienerHammerstein_Process_Noise", "Industrial_robot"]:
         dt = 1.0
         init_state_size = 50
@@ -102,15 +102,15 @@ def preprocess_nl_benchs(
     validation_size = 0.2
     train_val_all = [np.c_[x.u, x.y] for x in train_val]
     test_all = [np.c_[x.u, x.y] for x in test]
-    train_all = [x[:round(len(x) * validation_size)] for x in train_val_all]
-    val_all   = [x[round(len(x) * validation_size):] for x in train_val_all]
+    train_all = [x[: round(len(x) * validation_size)] for x in train_val_all]
+    val_all = [x[round(len(x) * validation_size) :] for x in train_val_all]
 
     scaler = StandardScaler()
     scaler.fit(np.vstack(train_all))
 
     train_X = np.vstack([sliding_window(scaler.transform(x), n_steps) for x in train_all])
-    val_X   = np.vstack([sliding_window(scaler.transform(x), n_steps) for x in val_all])
-    test_X  = np.vstack([sliding_window(scaler.transform(x), n_steps) for x in test_all])
+    val_X = np.vstack([sliding_window(scaler.transform(x), n_steps) for x in val_all])
+    test_X = np.vstack([sliding_window(scaler.transform(x), n_steps) for x in test_all])
 
     # assemble the final processed data into a dictionary
     processed_dataset = {
