@@ -20,6 +20,7 @@ from benchpots.datasets import (
     preprocess_beijing_air_quality,
     preprocess_italy_air_quality,
     preprocess_ucr_uea_datasets,
+    preprocess_nl_benchmarks,
 )
 from benchpots.utils import sliding_window, inverse_sliding_window
 
@@ -89,6 +90,19 @@ class TestBenchPOTS(unittest.TestCase):
             n_steps=24,
             pattern="point",
         )
+
+    def test_nl_benchs(self):
+        preprocess_nl_benchmarks(dataset_name="EMPS", rate=0.1, n_steps=24)
+        # bypass the below datasets to cut down the testing time
+        # preprocess_nl_benchmarks(dataset_name="CED", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="WienerHammerBenchMark", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="Silverbox", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="F16", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="ParWH", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="Cascaded_Tanks", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="BoucWen", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="WienerHammerstein_Process_Noise", rate=0.1, n_steps=24)
+        # preprocess_nl_benchmarks(dataset_name="Industrial_robot", rate=0.1, n_steps=24)
 
     def test_sliding(self):
         torch_tensor = torch.randn(1024, 5)
