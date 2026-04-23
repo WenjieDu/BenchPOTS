@@ -132,9 +132,9 @@ def preprocess_nl_benchmarks(
         "n_steps": n_steps,
         "n_features": test_X.shape[-1],
         "scaler": scaler,
-        ## Sampling time (delta time) in seconds
+        # Sampling time (delta time) in seconds
         "dt": dt,
-        ## The maximum size of the initial state (i.e., y[:init_state_size]) recommended for use in prediction.
+        # The maximum size of the initial state (i.e., y[:init_state_size]) recommended for use in prediction.
         "init_state_size": init_state_size,
         # train set
         "train_X": train_X,
