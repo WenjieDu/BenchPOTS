@@ -115,7 +115,8 @@ def preprocess_physionet2019(
         X = X[features]
 
     X = X.groupby("RecordID").apply(apply_func)
-    X = X.drop("RecordID", axis=1)
+    # pandas versions differ on whether group keys are kept as columns after groupby-apply.
+    X = X.drop(columns=["RecordID"], errors="ignore")
     X = X.reset_index()
     X = X.drop(["level_1"], axis=1)
     before_cols = X.columns.tolist()
@@ -125,7 +126,8 @@ def preprocess_physionet2019(
         logger.info(f"Dropped all-nan columns: {set(before_cols) - set(after_cols)}")
 
     # split the dataset into the train, val, and test sets
-    all_recordID = X["RecordID"].unique()
+    # Cast to numpy array for sklearn compatibility when pandas returns extension arrays (e.g., pyarrow-backed).
+    all_recordID = np.asarray(X["RecordID"].unique())
     train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2)
     train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2)
 

@@ -121,14 +121,16 @@ def preprocess_physionet2012(
         X = X[features]
 
     X = X.groupby("RecordID").apply(apply_func)
-    X = X.drop("RecordID", axis=1)
+    # pandas versions differ on whether group keys are kept as columns after groupby-apply.
+    X = X.drop(columns=["RecordID"], errors="ignore")
     X = X.reset_index()
     ICUType = X[["RecordID", "ICUType"]].set_index("RecordID").dropna()
     X = X.drop(["level_1", "ICUType"], axis=1)
 
     # PhysioNet2012 is an imbalanced dataset, hence, we separate positive and negative samples here for later splitting
     # This is to ensure positive and negative ratios are similar in train/val/test sets
-    all_recordID = X["RecordID"].unique()
+    # Cast to numpy array for sklearn compatibility when pandas returns extension arrays (e.g., pyarrow-backed).
+    all_recordID = np.asarray(X["RecordID"].unique())
     positive = (y == 1)["In-hospital_death"]
     positive_sample_IDs = y.loc[positive].index.to_list()
     negative_sample_IDs = np.setxor1d(all_recordID, positive_sample_IDs)
