@@ -7,6 +7,7 @@
 
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
@@ -20,6 +21,7 @@ from benchpots.datasets import (
     preprocess_physionet2019,
     preprocess_ett,
     preprocess_electricity_load_diagrams,
+    preprocess_pems_traffic,
     preprocess_beijing_air_quality,
     preprocess_italy_air_quality,
     preprocess_ucr_uea_datasets,
@@ -93,6 +95,57 @@ class TestBenchPOTS(unittest.TestCase):
         y_train = np.arange(n_train)
         y_test = np.arange(n_test)
         return {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
+    @staticmethod
+    def _build_mock_monthly_df_with_index(n_months=24):
+        dates = pd.date_range("2010-01-01", periods=n_months, freq="MS")
+        return pd.DataFrame({"feat": np.arange(n_months, dtype=float)}, index=dates)
+
+    @staticmethod
+    def _build_mock_monthly_df_with_date_col(n_months=24):
+        dates = pd.date_range("2010-01-01", periods=n_months, freq="MS")
+        return pd.DataFrame({"date": dates, "feat": np.arange(n_months, dtype=float)})
+
+    @staticmethod
+    def _build_mock_beijing_data(n_months=40):
+        dates = pd.date_range("2010-01-01", periods=n_months, freq="MS")
+        rows = []
+        for i, date in enumerate(dates):
+            rows.append(
+                {
+                    "year": date.year,
+                    "month": date.month,
+                    "day": date.day,
+                    "hour": 0,
+                    "station": "A",
+                    "wd": "N",
+                    "No": i,
+                    "PM2.5": float(i),
+                }
+            )
+        return {"X": pd.DataFrame(rows)}
+
+    @staticmethod
+    def _build_mock_italy_data(n_rows=60):
+        return {
+            "X": pd.DataFrame(
+                {
+                    "Date": ["01/01/2010"] * n_rows,
+                    "Time": [f"{i % 24:02d}.00.00" for i in range(n_rows)],
+                    "CO(GT)": np.linspace(0.0, 1.0, n_rows),
+                    "NOx(GT)": np.linspace(1.0, 2.0, n_rows),
+                }
+            )
+        }
+
+    @staticmethod
+    def _build_mock_nl_sequence(n_rows=80):
+        return SimpleNamespace(
+            u=np.linspace(0.0, 1.0, n_rows).reshape(-1, 1),
+            y=np.linspace(1.0, 2.0, n_rows).reshape(-1, 1),
+            sampling_time=0.1,
+            state_initialization_window_length=10,
+        )
 
     def test_random_walk(self):
         n_steps = 8
@@ -210,6 +263,86 @@ class TestBenchPOTS(unittest.TestCase):
             ds_a["val_y"], ds_c["val_y"]
         )
         assert split_changed, "Different random_state values should produce different splits."
+
+    def test_remaining_preprocessors_forward_random_state_to_missingness(self):
+        random_state = 123
+
+        with patch(
+            "benchpots.datasets.beijing_multisite_air_quality.tsdb.load",
+            return_value=self._build_mock_beijing_data(),
+        ), patch(
+            "benchpots.datasets.beijing_multisite_air_quality.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_beijing_air_quality(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.electricity_load_diagrams.tsdb.load",
+            return_value={"X": self._build_mock_monthly_df_with_index(n_months=24)},
+        ), patch(
+            "benchpots.datasets.electricity_load_diagrams.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_electricity_load_diagrams(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.electricity_transformer_temperature.tsdb.load",
+            return_value={"ETTh1": self._build_mock_monthly_df_with_index(n_months=24)},
+        ), patch(
+            "benchpots.datasets.electricity_transformer_temperature.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_ett(subset="ETTh1", rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.italy_air_quality.tsdb.load",
+            return_value=self._build_mock_italy_data(),
+        ), patch(
+            "benchpots.datasets.italy_air_quality.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_italy_air_quality(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.pems_traffic.tsdb.load",
+            return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=24)},
+        ), patch(
+            "benchpots.datasets.pems_traffic.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_pems_traffic(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.solar_alabama.tsdb.load",
+            return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=12)},
+        ), patch(
+            "benchpots.datasets.solar_alabama.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_solar_alabama(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.nl_benchmarks.nonlinear_benchmarks.EMPS",
+            return_value=(self._build_mock_nl_sequence(), self._build_mock_nl_sequence()),
+        ), patch(
+            "benchpots.datasets.nl_benchmarks.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_nl_benchmarks(dataset_name="EMPS", rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
     def test_random_walk_split_random_state(self):
         ds_a = preprocess_random_walk(

@@ -6,6 +6,8 @@ Preprocessing func for the dataset ETT (Electricity Transformer Temperature).
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Optional
+
 import pandas as pd
 import tsdb
 from sklearn.preprocessing import StandardScaler
@@ -21,6 +23,7 @@ def preprocess_ett(
     rate,
     n_steps,
     pattern: str = "point",
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,
@@ -44,6 +47,10 @@ def preprocess_ett(
     pattern:
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
+
+    random_state:
+        Controls the randomness of missingness generation.
+        Pass an int for reproducible missingness masks across runs.
 
     task_type:
         Task type for postprocessing. Supported values are
@@ -110,6 +117,9 @@ def preprocess_ett(
     }
 
     if rate > 0:
+        if random_state is not None and "random_state" not in kwargs:
+            kwargs["random_state"] = random_state
+
         # hold out ground truth in the original data for evaluation
         train_X_ori = train_X
         val_X_ori = val_X
