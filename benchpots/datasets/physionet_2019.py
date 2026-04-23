@@ -14,6 +14,7 @@ from sklearn.preprocessing import StandardScaler
 
 from ..utils.logging import logger, print_final_dataset_info
 from ..utils.missingness import create_missingness
+from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_physionet2019(
@@ -21,6 +22,9 @@ def preprocess_physionet2019(
     rate,
     pattern: str = "point",
     features: list = None,
+    task_type: str = "imputation",
+    n_pred_steps: int = 1,
+    forecast_feature_indices=None,
     **kwargs,
 ) -> dict:
     """Load and preprocess the dataset PhysionNet2019.
@@ -41,6 +45,16 @@ def preprocess_physionet2019(
     features:
         The features to be used in the dataset.
         If None, all features except the static features will be used.
+
+    task_type:
+        Task type for postprocessing. Supported values are
+        ['imputation', 'forecasting', 'classification', 'clustering', 'anomaly_detection'].
+
+    n_pred_steps:
+        Forecasting horizon. Effective only when task_type is 'forecasting'.
+
+    forecast_feature_indices:
+        Target feature indices for forecasting labels. If None, all features are used.
 
     Returns
     -------
@@ -101,7 +115,8 @@ def preprocess_physionet2019(
         X = X[features]
 
     X = X.groupby("RecordID").apply(apply_func)
-    X = X.drop("RecordID", axis=1)
+    # pandas versions differ on whether group keys are kept as columns after groupby-apply.
+    X = X.drop(columns=["RecordID"], errors="ignore")
     X = X.reset_index()
     X = X.drop(["level_1"], axis=1)
     before_cols = X.columns.tolist()
@@ -111,7 +126,8 @@ def preprocess_physionet2019(
         logger.info(f"Dropped all-nan columns: {set(before_cols) - set(after_cols)}")
 
     # split the dataset into the train, val, and test sets
-    all_recordID = X["RecordID"].unique()
+    # Cast to numpy array for sklearn compatibility when pandas returns extension arrays (e.g., pyarrow-backed).
+    all_recordID = np.asarray(X["RecordID"].unique())
     train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2)
     train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2)
 
@@ -202,6 +218,16 @@ def preprocess_physionet2019(
 
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
+
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+    train_X = processed_dataset["train_X"]
+    val_X = processed_dataset["val_X"]
+    test_X = processed_dataset["test_X"]
 
     print_final_dataset_info(train_X, val_X, test_X)
     return processed_dataset
