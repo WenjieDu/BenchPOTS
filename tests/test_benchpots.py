@@ -7,8 +7,10 @@
 
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import torch
 from pygrinder import calc_missing_rate
 
@@ -28,6 +30,33 @@ from benchpots.utils import convert_processed_dataset_by_task_type
 
 
 class TestBenchPOTS(unittest.TestCase):
+    @staticmethod
+    def _build_mock_physionet2012_data(n_records=20):
+        record_ids = np.arange(1000, 1000 + n_records)
+        rows = []
+        for record_id in record_ids:
+            for time in range(48):
+                rows.append(
+                    {
+                        "RecordID": record_id,
+                        "Time": time,
+                        "ICUType": record_id,
+                        "Age": 40 + (record_id % 10),
+                        "HR": float(record_id + time),
+                    }
+                )
+
+        set_a = pd.DataFrame(rows)
+        outcomes_a = pd.DataFrame(
+            {"In-hospital_death": [1] * (n_records // 2) + [0] * (n_records - n_records // 2)},
+            index=record_ids,
+        )
+        return {
+            "set-a": set_a,
+            "outcomes-a": outcomes_a,
+            "static_features": ["Age", "ICUType"],
+        }
+
     def test_random_walk(self):
         n_steps = 8
         n_features = 5
@@ -69,6 +98,30 @@ class TestBenchPOTS(unittest.TestCase):
 
     def test_physionet2012(self):
         preprocess_physionet2012(subset="set-a", rate=0.1)
+
+    def test_physionet2012_split_random_state(self):
+        with patch(
+            "benchpots.datasets.physionet_2012.tsdb.load",
+            side_effect=lambda _: self._build_mock_physionet2012_data(),
+        ):
+            ds_a = preprocess_physionet2012(subset="set-a", rate=0, random_state=42)
+            ds_b = preprocess_physionet2012(subset="set-a", rate=0, random_state=42)
+            ds_c = preprocess_physionet2012(subset="set-a", rate=0, random_state=7)
+
+        train_ids_a = np.unique(ds_a["train_ICUType"])
+        val_ids_a = np.unique(ds_a["val_ICUType"])
+        test_ids_a = np.unique(ds_a["test_ICUType"])
+
+        np.testing.assert_array_equal(train_ids_a, np.unique(ds_b["train_ICUType"]))
+        np.testing.assert_array_equal(val_ids_a, np.unique(ds_b["val_ICUType"]))
+        np.testing.assert_array_equal(test_ids_a, np.unique(ds_b["test_ICUType"]))
+
+        split_changed = (
+            not np.array_equal(train_ids_a, np.unique(ds_c["train_ICUType"]))
+            or not np.array_equal(val_ids_a, np.unique(ds_c["val_ICUType"]))
+            or not np.array_equal(test_ids_a, np.unique(ds_c["test_ICUType"]))
+        )
+        assert split_changed
 
     def test_random_walk_forecasting_shapes(self):
         n_steps = 12

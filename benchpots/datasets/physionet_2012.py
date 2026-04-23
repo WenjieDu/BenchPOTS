@@ -22,6 +22,7 @@ def preprocess_physionet2012(
     rate,
     pattern: str = "point",
     features: list = None,
+    random_state: int = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,
@@ -45,6 +46,10 @@ def preprocess_physionet2012(
     features:
         The features to be used in the dataset.
         If None, all features except the static features will be used.
+
+    random_state:
+        Controls the randomness of the train/validation/test split.
+        Pass an int for reproducible splits across runs.
 
     task_type:
         Task type for postprocessing. Supported values are
@@ -138,16 +143,16 @@ def preprocess_physionet2012(
 
     # split the dataset into the train, val, and test sets
     train_positive_set_ids, test_positive_set_ids = train_test_split(
-        positive_sample_IDs, test_size=0.2
+        positive_sample_IDs, test_size=0.2, random_state=random_state
     )
     train_positive_set_ids, val_positive_set_ids = train_test_split(
-        train_positive_set_ids, test_size=0.2
+        train_positive_set_ids, test_size=0.2, random_state=random_state
     )
     train_negative_set_ids, test_negative_set_ids = train_test_split(
-        negative_sample_IDs, test_size=0.2
+        negative_sample_IDs, test_size=0.2, random_state=random_state
     )
     train_negative_set_ids, val_negative_set_ids = train_test_split(
-        train_negative_set_ids, test_size=0.2
+        train_negative_set_ids, test_size=0.2, random_state=random_state
     )
     train_set_ids = np.concatenate([train_positive_set_ids, train_negative_set_ids])
     val_set_ids = np.concatenate([val_positive_set_ids, val_negative_set_ids])
