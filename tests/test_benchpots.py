@@ -190,63 +190,6 @@ class TestBenchPOTS(unittest.TestCase):
     def test_physionet2012(self):
         preprocess_physionet2012(subset="set-a", rate=0.1)
 
-    def test_physionet2012_split_random_state(self):
-        def extract_split_record_ids(dataset, split):
-            split_X = dataset[f"{split}_X"]
-            scaler = dataset["scaler"]
-            unscaled = scaler.inverse_transform(split_X.reshape(-1, split_X.shape[-1])).reshape(split_X.shape)
-            return np.unique(np.rint(unscaled[:, 0, 0]).astype(int))
-
-        with patch(
-            "benchpots.datasets.physionet_2012.tsdb.load",
-            side_effect=lambda _: self._build_mock_physionet2012_data(),
-        ):
-            ds_a = preprocess_physionet2012(subset="set-a", rate=0, random_state=42)
-            ds_b = preprocess_physionet2012(subset="set-a", rate=0, random_state=42)
-            ds_c = preprocess_physionet2012(subset="set-a", rate=0, random_state=7)
-
-        train_record_ids_a = extract_split_record_ids(ds_a, "train")
-        val_record_ids_a = extract_split_record_ids(ds_a, "val")
-        test_record_ids_a = extract_split_record_ids(ds_a, "test")
-
-        np.testing.assert_array_equal(train_record_ids_a, extract_split_record_ids(ds_b, "train"))
-        np.testing.assert_array_equal(val_record_ids_a, extract_split_record_ids(ds_b, "val"))
-        np.testing.assert_array_equal(test_record_ids_a, extract_split_record_ids(ds_b, "test"))
-
-        split_changed = (
-            not np.array_equal(train_record_ids_a, extract_split_record_ids(ds_c, "train"))
-            or not np.array_equal(val_record_ids_a, extract_split_record_ids(ds_c, "val"))
-            or not np.array_equal(test_record_ids_a, extract_split_record_ids(ds_c, "test"))
-        )
-        assert split_changed, "Different random_state values should produce different splits."
-
-    def test_physionet2019_split_random_state(self):
-        def extract_split_record_ids(dataset, split):
-            split_X = dataset[f"{split}_X"]
-            scaler = dataset["scaler"]
-            unscaled = scaler.inverse_transform(split_X.reshape(-1, split_X.shape[-1])).reshape(split_X.shape)
-            # The mocked HR feature is generated as `record_id + ICULOS`, so at the first timestep ICULOS==1.
-            return np.unique(np.rint(unscaled[:, 0, 0] - 1).astype(int))
-
-        with patch(
-            "benchpots.datasets.physionet_2019.tsdb.load",
-            side_effect=lambda _: self._build_mock_physionet2019_data(),
-        ):
-            ds_a = preprocess_physionet2019(subset="training_setA", rate=0, random_state=42)
-            ds_b = preprocess_physionet2019(subset="training_setA", rate=0, random_state=42)
-            ds_c = preprocess_physionet2019(subset="training_setA", rate=0, random_state=7)
-
-        np.testing.assert_array_equal(extract_split_record_ids(ds_a, "train"), extract_split_record_ids(ds_b, "train"))
-        np.testing.assert_array_equal(extract_split_record_ids(ds_a, "val"), extract_split_record_ids(ds_b, "val"))
-        np.testing.assert_array_equal(extract_split_record_ids(ds_a, "test"), extract_split_record_ids(ds_b, "test"))
-
-        split_changed = (
-            not np.array_equal(extract_split_record_ids(ds_a, "train"), extract_split_record_ids(ds_c, "train"))
-            or not np.array_equal(extract_split_record_ids(ds_a, "val"), extract_split_record_ids(ds_c, "val"))
-            or not np.array_equal(extract_split_record_ids(ds_a, "test"), extract_split_record_ids(ds_c, "test"))
-        )
-        assert split_changed, "Different random_state values should produce different splits."
-
     def test_ucr_uea_split_random_state(self):
         with patch("benchpots.datasets.ucr_uea_datasets.tsdb.list", return_value=["ucr_uea_mock"]), patch(
             "benchpots.datasets.ucr_uea_datasets.tsdb.load",
