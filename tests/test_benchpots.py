@@ -24,6 +24,7 @@ from benchpots.datasets import (
     preprocess_pems_traffic,
     preprocess_beijing_air_quality,
     preprocess_italy_air_quality,
+    preprocess_solar_alabama,
     preprocess_ucr_uea_datasets,
     preprocess_nl_benchmarks,
 )
