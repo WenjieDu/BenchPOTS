@@ -243,9 +243,9 @@ def gene_complete_random_walk_for_classification(
 
     # if shuffling, then shuffle the order of samples
     if shuffle:
-        seed = check_random_state(random_state)
+        rng = check_random_state(random_state)
         indices = np.arange(len(X))
-        seed.shuffle(indices)
+        rng.shuffle(indices)
         X = X[indices]
         y = y[indices]
         anomaly_y = anomaly_y[indices] if len(anomaly_y) > 0 else anomaly_y
@@ -294,7 +294,7 @@ def preprocess_random_walk(
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
 
-    random_state : int, default=None
+    random_state:
         Controls the randomness for generated samples and train/validation/test splits.
         Pass an int for reproducible outputs across runs.
 

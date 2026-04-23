@@ -6,6 +6,8 @@ Preprocessing func for the UCR&UAE datasets.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Optional
+
 import tsdb
 from pandas.api.types import is_string_dtype
 from sklearn.model_selection import train_test_split
@@ -20,7 +22,7 @@ def preprocess_ucr_uea_datasets(
     dataset_name,
     rate,
     pattern: str = "point",
-    random_state: int = None,
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,

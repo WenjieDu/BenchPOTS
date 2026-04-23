@@ -47,8 +47,10 @@ class TestBenchPOTS(unittest.TestCase):
                 )
 
         set_a = pd.DataFrame(rows)
+        n_positive = n_records // 2
+        n_negative = n_records - n_positive
         outcomes_a = pd.DataFrame(
-            {"In-hospital_death": [1] * (n_records // 2) + [0] * (n_records - (n_records // 2))},
+            {"In-hospital_death": [1] * n_positive + [0] * n_negative},
             index=record_ids,
         )
         return {
@@ -169,6 +171,7 @@ class TestBenchPOTS(unittest.TestCase):
             split_X = dataset[f"{split}_X"]
             scaler = dataset["scaler"]
             unscaled = scaler.inverse_transform(split_X.reshape(-1, split_X.shape[-1])).reshape(split_X.shape)
+            # The mocked HR feature is generated as `record_id + ICULOS`, so at the first timestep ICULOS==1.
             return np.unique(np.rint(unscaled[:, 0, 0] - 1).astype(int))
 
         with patch(
@@ -199,9 +202,13 @@ class TestBenchPOTS(unittest.TestCase):
             ds_b = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
             ds_c = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=7)
 
-        np.testing.assert_array_equal(np.sort(ds_a["train_y"]), np.sort(ds_b["train_y"]))
-        np.testing.assert_array_equal(np.sort(ds_a["val_y"]), np.sort(ds_b["val_y"]))
-        split_changed = not np.array_equal(np.sort(ds_a["train_y"]), np.sort(ds_c["train_y"]))
+        np.testing.assert_array_equal(ds_a["train_y"], ds_b["train_y"])
+        np.testing.assert_array_equal(ds_a["val_y"], ds_b["val_y"])
+        np.testing.assert_array_equal(ds_a["test_y"], ds_b["test_y"])
+        np.testing.assert_array_equal(ds_a["test_y"], ds_c["test_y"])
+        split_changed = not np.array_equal(ds_a["train_y"], ds_c["train_y"]) or not np.array_equal(
+            ds_a["val_y"], ds_c["val_y"]
+        )
         assert split_changed, "Different random_state values should produce different splits."
 
     def test_random_walk_split_random_state(self):

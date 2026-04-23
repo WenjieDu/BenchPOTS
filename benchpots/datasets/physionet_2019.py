@@ -6,6 +6,8 @@ Preprocessing func for the dataset PhysioNet2019.
 # Created by Yiyuan Yang <yyy1997sjz@gmail.com> and Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import tsdb
@@ -22,7 +24,7 @@ def preprocess_physionet2019(
     rate,
     pattern: str = "point",
     features: list = None,
-    random_state: int = None,
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,

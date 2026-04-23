@@ -6,6 +6,8 @@ Preprocessing func for the dataset PhysionNet2012.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import tsdb
@@ -22,7 +24,7 @@ def preprocess_physionet2012(
     rate,
     pattern: str = "point",
     features: list = None,
-    random_state: int = None,
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,
