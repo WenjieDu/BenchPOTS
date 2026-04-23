@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from ..utils.logging import logger, print_final_dataset_info
 from ..utils.missingness import create_missingness
 from ..utils.sliding import sliding_window
+from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_nl_benchmarks(
@@ -20,6 +21,9 @@ def preprocess_nl_benchmarks(
     rate,
     n_steps,
     pattern: str = "point",
+    task_type: str = "imputation",
+    n_pred_steps: int = 1,
+    forecast_feature_indices=None,
     **kwargs,
 ) -> dict:
     """Load and preprocess the dataset from nonlinear benchmarks.
@@ -47,6 +51,16 @@ def preprocess_nl_benchmarks(
     pattern:
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
+
+    task_type:
+        Task type for postprocessing. Supported values are
+        ['imputation', 'forecasting', 'classification', 'clustering', 'anomaly_detection'].
+
+    n_pred_steps:
+        Forecasting horizon. Effective only when task_type is 'forecasting'.
+
+    forecast_feature_indices:
+        Target feature indices for forecasting labels. If None, all features are used.
 
     Returns
     -------
@@ -153,6 +167,16 @@ def preprocess_nl_benchmarks(
         processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
+
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+    train_X = processed_dataset["train_X"]
+    val_X = processed_dataset["val_X"]
+    test_X = processed_dataset["test_X"]
 
     print_final_dataset_info(train_X, val_X, test_X)
     return processed_dataset
