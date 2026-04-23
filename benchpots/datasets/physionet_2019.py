@@ -22,6 +22,7 @@ def preprocess_physionet2019(
     rate,
     pattern: str = "point",
     features: list = None,
+    random_state: int = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,
@@ -45,6 +46,10 @@ def preprocess_physionet2019(
     features:
         The features to be used in the dataset.
         If None, all features except the static features will be used.
+
+    random_state:
+        Controls the randomness of the train/validation/test split.
+        Pass an int for reproducible splits across runs.
 
     task_type:
         Task type for postprocessing. Supported values are
@@ -128,8 +133,8 @@ def preprocess_physionet2019(
     # split the dataset into the train, val, and test sets
     # Cast to numpy array for sklearn compatibility when pandas returns extension arrays (e.g., pyarrow-backed).
     all_recordID = np.asarray(X["RecordID"].unique())
-    train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2)
-    train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2)
+    train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2, random_state=random_state)
+    train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2, random_state=random_state)
 
     train_set_ids.sort()
     val_set_ids.sort()

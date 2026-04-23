@@ -57,6 +57,41 @@ class TestBenchPOTS(unittest.TestCase):
             "static_features": ["Age", "ICUType"],
         }
 
+    @staticmethod
+    def _build_mock_physionet2019_data(n_records=20):
+        record_ids = np.arange(2000, 2000 + n_records)
+        rows = []
+        for record_id in record_ids:
+            for iculos in range(1, 49):
+                rows.append(
+                    {
+                        "RecordID": record_id,
+                        "ICULOS": iculos,
+                        "SepsisLabel": int(record_id % 2),
+                        "Age": 50 + (record_id % 10),
+                        "HR": float(record_id + iculos),
+                    }
+                )
+
+        training_set_a = pd.DataFrame(rows)
+        return {
+            "training_setA": training_set_a,
+            "training_setB": training_set_a.copy(),
+            "static_features": ["Age"],
+        }
+
+    @staticmethod
+    def _build_mock_ucr_uea_data(n_train=20, n_test=8, n_steps=6, n_features=2):
+        X_train = np.repeat(np.arange(n_train, dtype=float).reshape(-1, 1, 1), n_steps * n_features, axis=2).reshape(
+            n_train, n_steps, n_features
+        )
+        X_test = np.repeat(np.arange(n_test, dtype=float).reshape(-1, 1, 1), n_steps * n_features, axis=2).reshape(
+            n_test, n_steps, n_features
+        )
+        y_train = np.arange(n_train)
+        y_test = np.arange(n_test)
+        return {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
     def test_random_walk(self):
         n_steps = 8
         n_features = 5
@@ -127,6 +162,77 @@ class TestBenchPOTS(unittest.TestCase):
             or not np.array_equal(val_record_ids_a, extract_split_record_ids(ds_c, "val"))
             or not np.array_equal(test_record_ids_a, extract_split_record_ids(ds_c, "test"))
         )
+        assert split_changed, "Different random_state values should produce different splits."
+
+    def test_physionet2019_split_random_state(self):
+        def extract_split_record_ids(dataset, split):
+            split_X = dataset[f"{split}_X"]
+            scaler = dataset["scaler"]
+            unscaled = scaler.inverse_transform(split_X.reshape(-1, split_X.shape[-1])).reshape(split_X.shape)
+            return np.unique(np.rint(unscaled[:, 0, 0] - 1).astype(int))
+
+        with patch(
+            "benchpots.datasets.physionet_2019.tsdb.load",
+            side_effect=lambda _: self._build_mock_physionet2019_data(),
+        ):
+            ds_a = preprocess_physionet2019(subset="training_setA", rate=0, random_state=42)
+            ds_b = preprocess_physionet2019(subset="training_setA", rate=0, random_state=42)
+            ds_c = preprocess_physionet2019(subset="training_setA", rate=0, random_state=7)
+
+        np.testing.assert_array_equal(extract_split_record_ids(ds_a, "train"), extract_split_record_ids(ds_b, "train"))
+        np.testing.assert_array_equal(extract_split_record_ids(ds_a, "val"), extract_split_record_ids(ds_b, "val"))
+        np.testing.assert_array_equal(extract_split_record_ids(ds_a, "test"), extract_split_record_ids(ds_b, "test"))
+
+        split_changed = (
+            not np.array_equal(extract_split_record_ids(ds_a, "train"), extract_split_record_ids(ds_c, "train"))
+            or not np.array_equal(extract_split_record_ids(ds_a, "val"), extract_split_record_ids(ds_c, "val"))
+            or not np.array_equal(extract_split_record_ids(ds_a, "test"), extract_split_record_ids(ds_c, "test"))
+        )
+        assert split_changed, "Different random_state values should produce different splits."
+
+    def test_ucr_uea_split_random_state(self):
+        with patch("benchpots.datasets.ucr_uea_datasets.tsdb.list", return_value=["ucr_uea_mock"]), patch(
+            "benchpots.datasets.ucr_uea_datasets.tsdb.load",
+            side_effect=lambda _: self._build_mock_ucr_uea_data(),
+        ):
+            ds_a = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
+            ds_b = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
+            ds_c = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=7)
+
+        np.testing.assert_array_equal(np.sort(ds_a["train_y"]), np.sort(ds_b["train_y"]))
+        np.testing.assert_array_equal(np.sort(ds_a["val_y"]), np.sort(ds_b["val_y"]))
+        split_changed = not np.array_equal(np.sort(ds_a["train_y"]), np.sort(ds_c["train_y"]))
+        assert split_changed, "Different random_state values should produce different splits."
+
+    def test_random_walk_split_random_state(self):
+        ds_a = preprocess_random_walk(
+            n_steps=8,
+            n_features=3,
+            n_classes=3,
+            n_samples_each_class=40,
+            missing_rate=0,
+            random_state=42,
+        )
+        ds_b = preprocess_random_walk(
+            n_steps=8,
+            n_features=3,
+            n_classes=3,
+            n_samples_each_class=40,
+            missing_rate=0,
+            random_state=42,
+        )
+        ds_c = preprocess_random_walk(
+            n_steps=8,
+            n_features=3,
+            n_classes=3,
+            n_samples_each_class=40,
+            missing_rate=0,
+            random_state=7,
+        )
+
+        np.testing.assert_allclose(ds_a["train_X"], ds_b["train_X"])
+        np.testing.assert_array_equal(ds_a["train_y"], ds_b["train_y"])
+        split_changed = not np.allclose(ds_a["train_X"], ds_c["train_X"])
         assert split_changed, "Different random_state values should produce different splits."
 
     def test_random_walk_forecasting_shapes(self):

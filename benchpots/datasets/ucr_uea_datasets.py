@@ -20,6 +20,7 @@ def preprocess_ucr_uea_datasets(
     dataset_name,
     rate,
     pattern: str = "point",
+    random_state: int = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,
@@ -39,6 +40,10 @@ def preprocess_ucr_uea_datasets(
     pattern:
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
+
+    random_state:
+        Controls the randomness of the train/validation split.
+        Pass an int for reproducible splits across runs.
 
     task_type:
         Task type for postprocessing. Supported values are
@@ -77,7 +82,7 @@ def preprocess_ucr_uea_datasets(
 
     n_X_train = len(X_train)
 
-    train_ids, val_ids = train_test_split(list(range(n_X_train)), test_size=0.2)
+    train_ids, val_ids = train_test_split(list(range(n_X_train)), test_size=0.2, random_state=random_state)
     X_train, X_val = X_train[train_ids], X_train[val_ids]
     y_train, y_val = y_train[train_ids], y_train[val_ids]
 
