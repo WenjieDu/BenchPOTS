@@ -6,6 +6,8 @@ Preprocessing func for the UCR&UAE datasets.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Any, Optional, Sequence, Union
+
 import tsdb
 from pandas.api.types import is_string_dtype
 from sklearn.model_selection import train_test_split
@@ -17,13 +19,14 @@ from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_ucr_uea_datasets(
-    dataset_name,
-    rate,
+    dataset_name: str,
+    rate: float,
     pattern: str = "point",
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
-    forecast_feature_indices=None,
-    **kwargs,
+    forecast_feature_indices: Optional[Union[int, Sequence[int]]] = None,
+    **kwargs: Any,
 ) -> dict:
     """Load and preprocess the dataset from UCR&UEA.
 
@@ -39,6 +42,10 @@ def preprocess_ucr_uea_datasets(
     pattern:
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
+
+    random_state:
+        Controls the randomness of the train/validation split.
+        Pass an int for reproducible splits across runs.
 
     task_type:
         Task type for postprocessing. Supported values are
@@ -58,9 +65,7 @@ def preprocess_ucr_uea_datasets(
     """
 
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
-    assert dataset_name.startswith(
-        "ucr_uea_"
-    ), f"set_name must start with 'ucr_uea_', but got {dataset_name}"
+    assert dataset_name.startswith("ucr_uea_"), f"set_name must start with 'ucr_uea_', but got {dataset_name}"
     assert dataset_name in tsdb.list(), f"{dataset_name} is not in TSDB database."
 
     data = tsdb.load(dataset_name)
@@ -77,7 +82,7 @@ def preprocess_ucr_uea_datasets(
 
     n_X_train = len(X_train)
 
-    train_ids, val_ids = train_test_split(list(range(n_X_train)), test_size=0.2)
+    train_ids, val_ids = train_test_split(list(range(n_X_train)), test_size=0.2, random_state=random_state)
     X_train, X_val = X_train[train_ids], X_train[val_ids]
     y_train, y_val = y_train[train_ids], y_train[val_ids]
 
@@ -117,18 +122,25 @@ def preprocess_ucr_uea_datasets(
     if le is not None:
         processed_dataset["label_encoder"] = le
 
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+
     if rate > 0:
         # hold out ground truth in the original data for evaluation
-        train_X_ori = train_X
-        val_X_ori = val_X
-        test_X_ori = test_X
+        train_X_ori = processed_dataset["train_X"]
+        val_X_ori = processed_dataset["val_X"]
+        test_X_ori = processed_dataset["test_X"]
 
         # mask values in the train set to keep the same with below validation and test sets
-        train_X = create_missingness(train_X, rate, pattern, **kwargs)
+        train_X = create_missingness(processed_dataset["train_X"], rate, pattern, **kwargs)
         # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, rate, pattern, **kwargs)
+        val_X = create_missingness(processed_dataset["val_X"], rate, pattern, **kwargs)
         # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, rate, pattern, **kwargs)
+        test_X = create_missingness(processed_dataset["test_X"], rate, pattern, **kwargs)
 
         processed_dataset["train_X"] = train_X
         processed_dataset["train_X_ori"] = train_X_ori
@@ -140,16 +152,5 @@ def preprocess_ucr_uea_datasets(
         processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
-
-    processed_dataset = convert_processed_dataset_by_task_type(
-        processed_dataset,
-        task_type=task_type,
-        n_pred_steps=n_pred_steps,
-        forecast_feature_indices=forecast_feature_indices,
-    )
-    train_X = processed_dataset["train_X"]
-    val_X = processed_dataset["val_X"]
-    test_X = processed_dataset["test_X"]
-
-    print_final_dataset_info(train_X, val_X, test_X)
+    print_final_dataset_info(processed_dataset)
     return processed_dataset

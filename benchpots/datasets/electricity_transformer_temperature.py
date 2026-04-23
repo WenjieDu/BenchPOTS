@@ -6,6 +6,8 @@ Preprocessing func for the dataset ETT (Electricity Transformer Temperature).
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Any, Optional, Sequence, Union
+
 import pandas as pd
 import tsdb
 from sklearn.preprocessing import StandardScaler
@@ -17,14 +19,15 @@ from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_ett(
-    subset,
-    rate,
-    n_steps,
+    subset: str,
+    rate: float,
+    n_steps: int,
     pattern: str = "point",
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
-    forecast_feature_indices=None,
-    **kwargs,
+    forecast_feature_indices: Optional[Union[int, Sequence[int]]] = None,
+    **kwargs: Any,
 ) -> dict:
     """Load and preprocess the dataset ETT.
 
@@ -45,6 +48,10 @@ def preprocess_ett(
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
 
+    random_state:
+        Controls the randomness of missingness generation.
+        Pass an int for reproducible missingness masks across runs.
+
     task_type:
         Task type for postprocessing. Supported values are
         ['imputation', 'forecasting', 'classification', 'clustering', 'anomaly_detection'].
@@ -62,9 +69,7 @@ def preprocess_ett(
     """
 
     all_subset_names = ["ETTm1", "ETTm2", "ETTh1", "ETTh2"]
-    assert (
-        subset in all_subset_names
-    ), f"subset_name should be one of {all_subset_names}, but got {subset}"
+    assert subset in all_subset_names, f"subset_name should be one of {all_subset_names}, but got {subset}"
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
     assert n_steps > 0, f"sample_n_steps must be larger than 0, but got {n_steps}"
 
@@ -109,18 +114,28 @@ def preprocess_ett(
         "test_X": test_X,
     }
 
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+
     if rate > 0:
+        if random_state is not None and "random_state" not in kwargs:
+            kwargs["random_state"] = random_state
+
         # hold out ground truth in the original data for evaluation
-        train_X_ori = train_X
-        val_X_ori = val_X
-        test_X_ori = test_X
+        train_X_ori = processed_dataset["train_X"]
+        val_X_ori = processed_dataset["val_X"]
+        test_X_ori = processed_dataset["test_X"]
 
         # mask values in the train set to keep the same with below validation and test sets
-        train_X = create_missingness(train_X, rate, pattern, **kwargs)
+        train_X = create_missingness(processed_dataset["train_X"], rate, pattern, **kwargs)
         # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, rate, pattern, **kwargs)
+        val_X = create_missingness(processed_dataset["val_X"], rate, pattern, **kwargs)
         # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, rate, pattern, **kwargs)
+        test_X = create_missingness(processed_dataset["test_X"], rate, pattern, **kwargs)
 
         processed_dataset["train_X"] = train_X
         processed_dataset["train_X_ori"] = train_X_ori
@@ -133,16 +148,5 @@ def preprocess_ett(
         processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
-
-    processed_dataset = convert_processed_dataset_by_task_type(
-        processed_dataset,
-        task_type=task_type,
-        n_pred_steps=n_pred_steps,
-        forecast_feature_indices=forecast_feature_indices,
-    )
-    train_X = processed_dataset["train_X"]
-    val_X = processed_dataset["val_X"]
-    test_X = processed_dataset["test_X"]
-
-    print_final_dataset_info(train_X, val_X, test_X)
+    print_final_dataset_info(processed_dataset)
     return processed_dataset

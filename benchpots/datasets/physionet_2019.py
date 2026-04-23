@@ -6,6 +6,8 @@ Preprocessing func for the dataset PhysioNet2019.
 # Created by Yiyuan Yang <yyy1997sjz@gmail.com> and Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
+from typing import Any, Optional, Sequence, Union
+
 import numpy as np
 import pandas as pd
 import tsdb
@@ -18,14 +20,15 @@ from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_physionet2019(
-    subset,
-    rate,
+    subset: str,
+    rate: float,
     pattern: str = "point",
-    features: list = None,
+    features: Optional[list] = None,
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
-    forecast_feature_indices=None,
-    **kwargs,
+    forecast_feature_indices: Optional[Union[int, Sequence[int]]] = None,
+    **kwargs: Any,
 ) -> dict:
     """Load and preprocess the dataset PhysionNet2019.
 
@@ -46,6 +49,10 @@ def preprocess_physionet2019(
         The features to be used in the dataset.
         If None, all features except the static features will be used.
 
+    random_state:
+        Controls the randomness of the train/validation/test split.
+        Pass an int for reproducible splits across runs.
+
     task_type:
         Task type for postprocessing. Supported values are
         ['imputation', 'forecasting', 'classification', 'clustering', 'anomaly_detection'].
@@ -63,7 +70,9 @@ def preprocess_physionet2019(
 
     """
 
-    def apply_func(df_temp):  # pad and truncate to set the max length of samples as 48
+    def apply_func(
+        df_temp: pd.DataFrame,
+    ) -> Optional[pd.DataFrame]:  # pad and truncate to set the max length of samples as 48
         if len(df_temp) < 48:
             return None
         else:
@@ -72,9 +81,7 @@ def preprocess_physionet2019(
         return df_temp
 
     all_subsets = ["all", "training_setA", "training_setB"]
-    assert (
-        subset in all_subsets
-    ), f"subset should be one of {all_subsets}, but got {subset}"
+    assert subset in all_subsets, f"subset should be one of {all_subsets}, but got {subset}"
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
 
     # read the raw data
@@ -90,9 +97,7 @@ def preprocess_physionet2019(
         df = pd.concat([data["training_setA"], data["training_setB"]], sort=True)
         X = df.reset_index(drop=True)
 
-    if (
-        features is None
-    ):  # if features are not specified, we use all features except the static features, e.g. age
+    if features is None:  # if features are not specified, we use all features except the static features, e.g. age
         X = X.drop(data["static_features"], axis=1)
     else:  # if features are specified by users, only use the specified features
         # check if the given features are valid
@@ -100,9 +105,7 @@ def preprocess_physionet2019(
         if not all_features.issuperset(features_set):
             intersection_feats = all_features.intersection(features_set)
             difference = features_set.difference(intersection_feats)
-            raise ValueError(
-                f"Given features contain invalid features that not in the dataset: {difference}"
-            )
+            raise ValueError(f"Given features contain invalid features that not in the dataset: {difference}")
         # check if the given features contain necessary features for preprocessing
         if "RecordID" not in features:
             features.append("RecordID")
@@ -128,19 +131,15 @@ def preprocess_physionet2019(
     # split the dataset into the train, val, and test sets
     # Cast to numpy array for sklearn compatibility when pandas returns extension arrays (e.g., pyarrow-backed).
     all_recordID = np.asarray(X["RecordID"].unique())
-    train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2)
-    train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2)
+    train_set_ids, test_set_ids = train_test_split(all_recordID, test_size=0.2, random_state=random_state)
+    train_set_ids, val_set_ids = train_test_split(train_set_ids, test_size=0.2, random_state=random_state)
 
     train_set_ids.sort()
     val_set_ids.sort()
     test_set_ids.sort()
-    train_set = X[X["RecordID"].isin(train_set_ids)].sort_values(
-        ["RecordID", time_feature]
-    )
+    train_set = X[X["RecordID"].isin(train_set_ids)].sort_values(["RecordID", time_feature])
     val_set = X[X["RecordID"].isin(val_set_ids)].sort_values(["RecordID", time_feature])
-    test_set = X[X["RecordID"].isin(test_set_ids)].sort_values(
-        ["RecordID", time_feature]
-    )
+    test_set = X[X["RecordID"].isin(test_set_ids)].sort_values(["RecordID", time_feature])
     train_y = train_set[[time_feature, label_feature]]
     val_y = val_set[[time_feature, label_feature]]
     test_y = test_set[[time_feature, label_feature]]
@@ -187,6 +186,13 @@ def preprocess_physionet2019(
         "test_y": test_y,
     }
 
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+
     if rate > 0:
         logger.warning(
             "Note that physionet_2019 has sparse observations in the time series, "
@@ -194,15 +200,13 @@ def preprocess_physionet2019(
         )
 
         # hold out ground truth in the original data for evaluation
-        val_X_ori = val_X
-        test_X_ori = test_X
+        val_X_ori = processed_dataset["val_X"]
+        test_X_ori = processed_dataset["test_X"]
 
         # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, rate, pattern, **kwargs)
+        val_X = create_missingness(processed_dataset["val_X"], rate, pattern, **kwargs)
         # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, rate, pattern, **kwargs)
-
-        processed_dataset["train_X"] = train_X
+        test_X = create_missingness(processed_dataset["test_X"], rate, pattern, **kwargs)
 
         processed_dataset["val_X"] = val_X
         processed_dataset["val_X_ori"] = val_X_ori
@@ -218,16 +222,5 @@ def preprocess_physionet2019(
 
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
-
-    processed_dataset = convert_processed_dataset_by_task_type(
-        processed_dataset,
-        task_type=task_type,
-        n_pred_steps=n_pred_steps,
-        forecast_feature_indices=forecast_feature_indices,
-    )
-    train_X = processed_dataset["train_X"]
-    val_X = processed_dataset["val_X"]
-    test_X = processed_dataset["test_X"]
-
-    print_final_dataset_info(train_X, val_X, test_X)
+    print_final_dataset_info(processed_dataset)
     return processed_dataset
