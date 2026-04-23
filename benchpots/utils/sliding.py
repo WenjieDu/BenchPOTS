@@ -55,9 +55,7 @@ def sliding_window(
         f"time_series length {len(time_series)} is less than "
         f"window_size {window_size}. There is no space for sliding."
     )
-    assert (
-        stride > 0 and window_size > 0
-    ), f"stride {stride} and window_size {window_size} must be positive"
+    assert stride > 0 and window_size > 0, f"stride {stride} and window_size {window_size} must be positive"
     assert stride <= window_size, (
         f"stride {stride} shouldn't be larger than window_size {window_size}. "
         f"Otherwise there will be gaps between samples."
@@ -88,15 +86,13 @@ def sliding_window(
         raise RuntimeError
 
     if not drop_last:
-        logger.info(
-            "drop_last is set as False, the last sample is kept and will be returned independently."
-        )
+        logger.info("drop_last is set as False, the last sample is kept and will be returned independently.")
         return samples, time_series[start_indices[-1] + stride :]
 
     return samples
 
 
-def inverse_sliding_window(X, stride):
+def inverse_sliding_window(X: Union[np.ndarray, torch.Tensor], stride: int) -> Union[np.ndarray, torch.Tensor]:
     """Restore the original time-series data from the generated sliding window samples.
     Note that this is the inverse operation of the `sliding_window` function, but there is no guarantee that
     the restored data is the same as the original data considering that

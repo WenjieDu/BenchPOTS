@@ -1,15 +1,14 @@
-"""
-
-"""
+""" """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
 
 from pygrinder import mcar, seq_missing, block_missing
+from typing import Any
 
 
-def create_missingness(X, rate, pattern, **kwargs):
+def create_missingness(X: Any, rate: float, pattern: str, **kwargs: Any) -> Any:
     """Create missingness in the data.
 
     Parameters

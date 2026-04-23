@@ -8,7 +8,7 @@ Preprocessing func for the generated random walk dataset.
 
 
 import math
-from typing import Optional, Tuple
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from pygrinder import mcar
@@ -254,18 +254,18 @@ def gene_complete_random_walk_for_classification(
 
 
 def preprocess_random_walk(
-    n_steps=24,
-    n_features=10,
-    n_classes=2,
-    n_samples_each_class=1000,
-    anomaly_rate=0,
-    missing_rate=0.1,
+    n_steps: int = 24,
+    n_features: int = 10,
+    n_classes: int = 2,
+    n_samples_each_class: int = 1000,
+    anomaly_rate: float = 0,
+    missing_rate: float = 0.1,
     pattern: str = "point",
     random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
-    forecast_feature_indices=None,
-    **kwargs,
+    forecast_feature_indices: Optional[Union[int, Sequence[int]]] = None,
+    **kwargs: Any,
 ) -> dict:
     """Generate a random-walk data.
 
@@ -358,6 +358,10 @@ def preprocess_random_walk(
     train_X = train_X.reshape(-1, n_steps, n_features)
     val_X = val_X.reshape(-1, n_steps, n_features)
     test_X = test_X.reshape(-1, n_steps, n_features)
+
+    if missing_rate > 0:
+        train_X_ori = scaler.transform(train_X_ori.reshape(-1, n_features)).reshape(-1, n_steps, n_features)
+
     processed_dataset = {
         # general info
         "n_classes": n_classes,
@@ -382,27 +386,9 @@ def preprocess_random_walk(
 
     if missing_rate > 0:
         # hold out ground truth in the original data for evaluation
-        train_X_ori = scaler.transform(train_X_ori.reshape(-1, n_features)).reshape(-1, n_steps, n_features)
-        val_X_ori = val_X
-        test_X_ori = test_X
-
-        # mask values in the train set to keep the same with below validation and test sets
-        train_X = create_missingness(train_X, missing_rate, pattern, **kwargs)
-        # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, missing_rate, pattern, **kwargs)
-        # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, missing_rate, pattern, **kwargs)
-
-        processed_dataset["train_X"] = train_X
         processed_dataset["train_X_ori"] = train_X_ori
-
-        processed_dataset["val_X"] = val_X
-        processed_dataset["val_X_ori"] = val_X_ori
-
-        processed_dataset["test_X"] = test_X
-        processed_dataset["test_X_ori"] = test_X_ori
-    else:
-        logger.warning("rate is 0, no missing values are artificially added.")
+        processed_dataset["val_X_ori"] = val_X
+        processed_dataset["test_X_ori"] = test_X
 
     processed_dataset = convert_processed_dataset_by_task_type(
         processed_dataset,
@@ -410,9 +396,21 @@ def preprocess_random_walk(
         n_pred_steps=n_pred_steps,
         forecast_feature_indices=forecast_feature_indices,
     )
-    train_X = processed_dataset["train_X"]
-    val_X = processed_dataset["val_X"]
-    test_X = processed_dataset["test_X"]
 
-    print_final_dataset_info(train_X, val_X, test_X)
+    if missing_rate > 0:
+        # mask values in the train set to keep the same with below validation and test sets
+        train_X = create_missingness(processed_dataset["train_X"], missing_rate, pattern, **kwargs)
+        # mask values in the validation set as ground truth
+        val_X = create_missingness(processed_dataset["val_X"], missing_rate, pattern, **kwargs)
+        # mask values in the test set as ground truth
+        test_X = create_missingness(processed_dataset["test_X"], missing_rate, pattern, **kwargs)
+
+        processed_dataset["train_X"] = train_X
+
+        processed_dataset["val_X"] = val_X
+
+        processed_dataset["test_X"] = test_X
+    else:
+        logger.warning("rate is 0, no missing values are artificially added.")
+    print_final_dataset_info(processed_dataset)
     return processed_dataset

@@ -1,6 +1,4 @@
-"""
-
-"""
+""" """
 
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
@@ -372,6 +370,22 @@ class TestBenchPOTS(unittest.TestCase):
         np.testing.assert_allclose(converted["train_X_pred"], (base_X + 100)[:, -n_pred_steps:, :], equal_nan=True)
         np.testing.assert_allclose(converted["val_X_pred"], (base_X + 110)[:, -n_pred_steps:, :], equal_nan=True)
         np.testing.assert_allclose(converted["test_X_pred"], (base_X + 120)[:, -n_pred_steps:, :], equal_nan=True)
+
+    def test_random_walk_forecasting_prediction_targets_have_no_artificial_missing(self):
+        dataset = preprocess_random_walk(
+            n_steps=12,
+            n_features=3,
+            n_classes=2,
+            n_samples_each_class=60,
+            missing_rate=0.2,
+            task_type="forecasting",
+            n_pred_steps=3,
+            random_state=42,
+        )
+
+        assert not np.isnan(dataset["train_X_pred"]).any()
+        assert not np.isnan(dataset["val_X_pred"]).any()
+        assert not np.isnan(dataset["test_X_pred"]).any()
 
     def test_task_type_conversion_validation(self):
         fake_dataset = {

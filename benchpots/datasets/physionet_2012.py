@@ -6,7 +6,7 @@ Preprocessing func for the dataset PhysionNet2012.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-from typing import Optional
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -20,15 +20,15 @@ from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_physionet2012(
-    subset,
-    rate,
+    subset: str,
+    rate: float,
     pattern: str = "point",
-    features: list = None,
+    features: Optional[list] = None,
     random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
-    forecast_feature_indices=None,
-    **kwargs,
+    forecast_feature_indices: Optional[Union[int, Sequence[int]]] = None,
+    **kwargs: Any,
 ) -> dict:
     """Load and preprocess the dataset PhysionNet2012.
 
@@ -70,7 +70,7 @@ def preprocess_physionet2012(
 
     """
 
-    def apply_func(df_temp):  # pad and truncate to set the max length of samples as 48
+    def apply_func(df_temp: pd.DataFrame) -> pd.DataFrame:  # pad and truncate to set the max length of samples as 48
         missing = list(set(range(0, 48)).difference(set(df_temp["Time"])))
         missing_part = pd.DataFrame({"Time": missing})
         df_temp = pd.concat(
@@ -81,9 +81,7 @@ def preprocess_physionet2012(
         return df_temp
 
     all_subsets = ["all", "set-a", "set-b", "set-c"]
-    assert (
-        subset.lower() in all_subsets
-    ), f"subset should be one of {all_subsets}, but got {subset}"
+    assert subset.lower() in all_subsets, f"subset should be one of {all_subsets}, but got {subset}"
     assert 0 <= rate < 1, f"rate must be in [0, 1), but got {rate}"
 
     # read the raw data
@@ -104,9 +102,7 @@ def preprocess_physionet2012(
         y = pd.concat([data["outcomes-a"], data["outcomes-b"], data["outcomes-c"]])
         y = y.loc[unique_ids]
 
-    if (
-        features is None
-    ):  # if features are not specified, we use all features except the static features, e.g. age
+    if features is None:  # if features are not specified, we use all features except the static features, e.g. age
         X = X.drop(data["static_features"], axis=1)
     else:  # if features are specified by users, only use the specified features
         # check if the given features are valid
@@ -114,9 +110,7 @@ def preprocess_physionet2012(
         if not all_features.issuperset(features_set):
             intersection_feats = all_features.intersection(features_set)
             difference = features_set.difference(intersection_feats)
-            raise ValueError(
-                f"Given features contain invalid features that not in the dataset: {difference}"
-            )
+            raise ValueError(f"Given features contain invalid features that not in the dataset: {difference}")
         # check if the given features contain necessary features for preprocessing
         if "RecordID" not in features:
             features.append("RecordID")
@@ -224,6 +218,13 @@ def preprocess_physionet2012(
         "test_ICUType": test_ICUType.flatten(),
     }
 
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+
     if rate > 0:
         logger.warning(
             "Note that physionet_2012 has sparse observations in the time series, "
@@ -231,15 +232,13 @@ def preprocess_physionet2012(
         )
 
         # hold out ground truth in the original data for evaluation
-        val_X_ori = val_X
-        test_X_ori = test_X
+        val_X_ori = processed_dataset["val_X"]
+        test_X_ori = processed_dataset["test_X"]
 
         # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, rate, pattern, **kwargs)
+        val_X = create_missingness(processed_dataset["val_X"], rate, pattern, **kwargs)
         # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, rate, pattern, **kwargs)
-
-        processed_dataset["train_X"] = train_X
+        test_X = create_missingness(processed_dataset["test_X"], rate, pattern, **kwargs)
 
         processed_dataset["val_X"] = val_X
         processed_dataset["val_X_ori"] = val_X_ori
@@ -259,16 +258,5 @@ def preprocess_physionet2012(
         )
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
-
-    processed_dataset = convert_processed_dataset_by_task_type(
-        processed_dataset,
-        task_type=task_type,
-        n_pred_steps=n_pred_steps,
-        forecast_feature_indices=forecast_feature_indices,
-    )
-    train_X = processed_dataset["train_X"]
-    val_X = processed_dataset["val_X"]
-    test_X = processed_dataset["test_X"]
-
-    print_final_dataset_info(train_X, val_X, test_X)
+    print_final_dataset_info(processed_dataset)
     return processed_dataset

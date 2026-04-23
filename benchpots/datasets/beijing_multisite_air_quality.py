@@ -6,7 +6,7 @@ Preprocessing func for the dataset Beijing Multi-site Air Quality.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-from typing import Optional
+from typing import Any, Optional, Sequence, Union
 
 import pandas as pd
 import tsdb
@@ -19,14 +19,14 @@ from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_beijing_air_quality(
-    rate,
-    n_steps,
+    rate: float,
+    n_steps: int,
     pattern: str = "point",
     random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
-    forecast_feature_indices=None,
-    **kwargs,
+    forecast_feature_indices: Optional[Union[int, Sequence[int]]] = None,
+    **kwargs: Any,
 ) -> dict:
     """Load and preprocess the dataset Beijing Multi-site Air Quality.
 
@@ -78,32 +78,23 @@ def preprocess_beijing_air_quality(
         current_df = df[df["station"] == station]
         logger.info(f"Current dataframe shape: {current_df.shape}")
 
-        current_df["date_time"] = pd.to_datetime(
-            current_df[["year", "month", "day", "hour"]]
-        )
+        current_df["date_time"] = pd.to_datetime(current_df[["year", "month", "day", "hour"]])
         station_name_collector.append(current_df.loc[0, "station"])
         # remove duplicated date info and wind direction, which is a categorical col
-        current_df = current_df.drop(
-            ["year", "month", "day", "hour", "wd", "No", "station"], axis=1
-        )
+        current_df = current_df.drop(["year", "month", "day", "hour", "wd", "No", "station"], axis=1)
         df_collector.append(current_df)
 
-    logger.info(
-        f"There are total {len(station_name_collector)} stations, they are {station_name_collector}"
-    )
+    logger.info(f"There are total {len(station_name_collector)} stations, they are {station_name_collector}")
     date_time = df_collector[0]["date_time"]
     df_collector = [i.drop("date_time", axis=1) for i in df_collector]
     df = pd.concat(df_collector, axis=1)
     feature_names = [
-        station + "_" + feature
-        for station in station_name_collector
-        for feature in df_collector[0].columns
+        station + "_" + feature for station in station_name_collector for feature in df_collector[0].columns
     ]
     feature_num = len(feature_names)
     df.columns = feature_names
     logger.info(
-        f"Original df missing rate: "
-        f"{(df[feature_names].isna().sum().sum() / (df.shape[0] * feature_num)):.3f}"
+        f"Original df missing rate: " f"{(df[feature_names].isna().sum().sum() / (df.shape[0] * feature_num)):.3f}"
     )
 
     df["date_time"] = date_time
@@ -141,21 +132,28 @@ def preprocess_beijing_air_quality(
         "test_X": test_X,
     }
 
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+
     if rate > 0:
         if random_state is not None and "random_state" not in kwargs:
             kwargs["random_state"] = random_state
 
         # hold out ground truth in the original data for evaluation
-        train_X_ori = train_X
-        val_X_ori = val_X
-        test_X_ori = test_X
+        train_X_ori = processed_dataset["train_X"]
+        val_X_ori = processed_dataset["val_X"]
+        test_X_ori = processed_dataset["test_X"]
 
         # mask values in the train set to keep the same with below validation and test sets
-        train_X = create_missingness(train_X, rate, pattern, **kwargs)
+        train_X = create_missingness(processed_dataset["train_X"], rate, pattern, **kwargs)
         # mask values in the validation set as ground truth
-        val_X = create_missingness(val_X, rate, pattern, **kwargs)
+        val_X = create_missingness(processed_dataset["val_X"], rate, pattern, **kwargs)
         # mask values in the test set as ground truth
-        test_X = create_missingness(test_X, rate, pattern, **kwargs)
+        test_X = create_missingness(processed_dataset["test_X"], rate, pattern, **kwargs)
 
         processed_dataset["train_X"] = train_X
         processed_dataset["train_X_ori"] = train_X_ori
@@ -167,16 +165,5 @@ def preprocess_beijing_air_quality(
         processed_dataset["test_X_ori"] = test_X_ori
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
-
-    processed_dataset = convert_processed_dataset_by_task_type(
-        processed_dataset,
-        task_type=task_type,
-        n_pred_steps=n_pred_steps,
-        forecast_feature_indices=forecast_feature_indices,
-    )
-    train_X = processed_dataset["train_X"]
-    val_X = processed_dataset["val_X"]
-    test_X = processed_dataset["test_X"]
-
-    print_final_dataset_info(train_X, val_X, test_X)
+    print_final_dataset_info(processed_dataset)
     return processed_dataset

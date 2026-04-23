@@ -73,6 +73,7 @@ def convert_processed_dataset_by_task_type(
     processed_dataset["task_type"] = task_type
 
     if task_type != "forecasting":
+        # so far other tasks do not need further processing steps
         return processed_dataset
 
     if not isinstance(n_pred_steps, int) or n_pred_steps <= 0:
