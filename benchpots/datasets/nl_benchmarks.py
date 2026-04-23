@@ -6,12 +6,11 @@ Preprocessing func for nonlinear benchmarks.
 # Created by Sikai Zhang <matthew.szhang91@gmail.com>
 # License: BSD-3-Clause
 
-from typing import Optional
-
-import numpy as np
 import nonlinear_benchmarks
-from typing import Any, Optional, Sequence, Union
+import numpy as np
 from sklearn.preprocessing import StandardScaler
+from typing import Any, Optional, Sequence, Union
+from typing import Optional
 
 from ..utils.logging import logger, print_final_dataset_info
 from ..utils.missingness import create_missingness
