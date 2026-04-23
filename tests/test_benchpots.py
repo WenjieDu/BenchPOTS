@@ -40,7 +40,7 @@ class TestBenchPOTS(unittest.TestCase):
                     {
                         "RecordID": record_id,
                         "Time": time,
-                        "ICUType": record_id,
+                        "ICUType": (record_id % 4) + 1,
                         "Age": 40 + (record_id % 10),
                         "HR": float(record_id + time),
                     }
@@ -48,7 +48,7 @@ class TestBenchPOTS(unittest.TestCase):
 
         set_a = pd.DataFrame(rows)
         outcomes_a = pd.DataFrame(
-            {"In-hospital_death": [1] * (n_records // 2) + [0] * (n_records - n_records // 2)},
+            {"In-hospital_death": [1] * (n_records // 2) + [0] * (n_records - (n_records // 2))},
             index=record_ids,
         )
         return {
@@ -100,6 +100,12 @@ class TestBenchPOTS(unittest.TestCase):
         preprocess_physionet2012(subset="set-a", rate=0.1)
 
     def test_physionet2012_split_random_state(self):
+        def extract_split_record_ids(dataset, split):
+            split_X = dataset[f"{split}_X"]
+            scaler = dataset["scaler"]
+            unscaled = scaler.inverse_transform(split_X.reshape(-1, split_X.shape[-1])).reshape(split_X.shape)
+            return np.unique(np.rint(unscaled[:, 0, 0]).astype(int))
+
         with patch(
             "benchpots.datasets.physionet_2012.tsdb.load",
             side_effect=lambda _: self._build_mock_physionet2012_data(),
@@ -108,20 +114,20 @@ class TestBenchPOTS(unittest.TestCase):
             ds_b = preprocess_physionet2012(subset="set-a", rate=0, random_state=42)
             ds_c = preprocess_physionet2012(subset="set-a", rate=0, random_state=7)
 
-        train_ids_a = np.unique(ds_a["train_ICUType"])
-        val_ids_a = np.unique(ds_a["val_ICUType"])
-        test_ids_a = np.unique(ds_a["test_ICUType"])
+        train_record_ids_a = extract_split_record_ids(ds_a, "train")
+        val_record_ids_a = extract_split_record_ids(ds_a, "val")
+        test_record_ids_a = extract_split_record_ids(ds_a, "test")
 
-        np.testing.assert_array_equal(train_ids_a, np.unique(ds_b["train_ICUType"]))
-        np.testing.assert_array_equal(val_ids_a, np.unique(ds_b["val_ICUType"]))
-        np.testing.assert_array_equal(test_ids_a, np.unique(ds_b["test_ICUType"]))
+        np.testing.assert_array_equal(train_record_ids_a, extract_split_record_ids(ds_b, "train"))
+        np.testing.assert_array_equal(val_record_ids_a, extract_split_record_ids(ds_b, "val"))
+        np.testing.assert_array_equal(test_record_ids_a, extract_split_record_ids(ds_b, "test"))
 
         split_changed = (
-            not np.array_equal(train_ids_a, np.unique(ds_c["train_ICUType"]))
-            or not np.array_equal(val_ids_a, np.unique(ds_c["val_ICUType"]))
-            or not np.array_equal(test_ids_a, np.unique(ds_c["test_ICUType"]))
+            not np.array_equal(train_record_ids_a, extract_split_record_ids(ds_c, "train"))
+            or not np.array_equal(val_record_ids_a, extract_split_record_ids(ds_c, "val"))
+            or not np.array_equal(test_record_ids_a, extract_split_record_ids(ds_c, "test"))
         )
-        assert split_changed
+        assert split_changed, "Different random_state values should produce different splits."
 
     def test_random_walk_forecasting_shapes(self):
         n_steps = 12
