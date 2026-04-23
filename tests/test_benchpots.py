@@ -8,6 +8,7 @@
 
 import unittest
 
+import numpy as np
 import torch
 from pygrinder import calc_missing_rate
 
@@ -23,6 +24,7 @@ from benchpots.datasets import (
     preprocess_nl_benchmarks,
 )
 from benchpots.utils import sliding_window, inverse_sliding_window
+from benchpots.utils import convert_processed_dataset_by_task_type
 
 
 class TestBenchPOTS(unittest.TestCase):
@@ -67,6 +69,85 @@ class TestBenchPOTS(unittest.TestCase):
 
     def test_physionet2012(self):
         preprocess_physionet2012(subset="set-a", rate=0.1)
+
+    def test_random_walk_forecasting_shapes(self):
+        n_steps = 12
+        n_pred_steps = 4
+        n_features = 3
+        dataset = preprocess_random_walk(
+            n_steps=n_steps,
+            n_features=n_features,
+            n_classes=2,
+            n_samples_each_class=60,
+            missing_rate=0,
+            task_type="forecasting",
+            n_pred_steps=n_pred_steps,
+        )
+
+        assert dataset["task_type"] == "forecasting"
+        assert dataset["n_steps_original"] == n_steps
+        assert dataset["n_steps"] == n_steps - n_pred_steps
+        assert dataset["n_pred_steps"] == n_pred_steps
+        assert dataset["n_pred_features"] == n_features
+
+        assert dataset["train_X"].shape[1] == n_steps - n_pred_steps
+        assert dataset["val_X"].shape[1] == n_steps - n_pred_steps
+        assert dataset["test_X"].shape[1] == n_steps - n_pred_steps
+
+        assert dataset["train_X_pred"].shape[1] == n_pred_steps
+        assert dataset["val_X_pred"].shape[1] == n_pred_steps
+        assert dataset["test_X_pred"].shape[1] == n_pred_steps
+
+    def test_random_walk_forecasting_uses_ori_targets(self):
+        n_pred_steps = 3
+        base_X = np.arange(2 * 8 * 2, dtype="float32").reshape(2, 8, 2)
+        processed = {
+            "train_X": base_X.copy(),
+            "val_X": base_X.copy() + 10,
+            "test_X": base_X.copy() + 20,
+            "train_X_ori": base_X.copy() + 100,
+            "val_X_ori": base_X.copy() + 110,
+            "test_X_ori": base_X.copy() + 120,
+        }
+
+        converted = convert_processed_dataset_by_task_type(
+            processed,
+            task_type="forecasting",
+            n_pred_steps=n_pred_steps,
+        )
+
+        assert "train_X_pred_ori" not in converted
+        assert "val_X_pred_ori" not in converted
+        assert "test_X_pred_ori" not in converted
+
+        np.testing.assert_allclose(converted["train_X_pred"], (base_X + 100)[:, -n_pred_steps:, :], equal_nan=True)
+        np.testing.assert_allclose(converted["val_X_pred"], (base_X + 110)[:, -n_pred_steps:, :], equal_nan=True)
+        np.testing.assert_allclose(converted["test_X_pred"], (base_X + 120)[:, -n_pred_steps:, :], equal_nan=True)
+
+    def test_task_type_conversion_validation(self):
+        fake_dataset = {
+            "train_X": np.random.randn(4, 8, 2).astype("float32"),
+            "val_X": np.random.randn(4, 8, 2).astype("float32"),
+            "test_X": np.random.randn(4, 8, 2).astype("float32"),
+        }
+
+        with self.assertRaises(ValueError):
+            convert_processed_dataset_by_task_type(dict(fake_dataset), task_type="unknown")
+
+        with self.assertRaises(ValueError):
+            convert_processed_dataset_by_task_type(
+                dict(fake_dataset),
+                task_type="forecasting",
+                n_pred_steps=8,
+            )
+
+        with self.assertRaises(ValueError):
+            convert_processed_dataset_by_task_type(
+                dict(fake_dataset),
+                task_type="forecasting",
+                n_pred_steps=2,
+                forecast_feature_indices=[10],
+            )
 
     def test_physionet2019(self):
         preprocess_physionet2019(subset="training_setA", rate=0.1)

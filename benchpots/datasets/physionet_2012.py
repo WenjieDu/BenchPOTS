@@ -14,6 +14,7 @@ from sklearn.preprocessing import StandardScaler
 
 from ..utils.logging import logger, print_final_dataset_info
 from ..utils.missingness import create_missingness
+from ..utils.task_type import convert_processed_dataset_by_task_type
 
 
 def preprocess_physionet2012(
@@ -21,6 +22,9 @@ def preprocess_physionet2012(
     rate,
     pattern: str = "point",
     features: list = None,
+    task_type: str = "imputation",
+    n_pred_steps: int = 1,
+    forecast_feature_indices=None,
     **kwargs,
 ) -> dict:
     """Load and preprocess the dataset PhysionNet2012.
@@ -41,6 +45,16 @@ def preprocess_physionet2012(
     features:
         The features to be used in the dataset.
         If None, all features except the static features will be used.
+
+    task_type:
+        Task type for postprocessing. Supported values are
+        ['imputation', 'forecasting', 'classification', 'clustering', 'anomaly_detection'].
+
+    n_pred_steps:
+        Forecasting horizon. Effective only when task_type is 'forecasting'.
+
+    forecast_feature_indices:
+        Target feature indices for forecasting labels. If None, all features are used.
 
     Returns
     -------
@@ -107,14 +121,16 @@ def preprocess_physionet2012(
         X = X[features]
 
     X = X.groupby("RecordID").apply(apply_func)
-    X = X.drop("RecordID", axis=1)
+    # pandas versions differ on whether group keys are kept as columns after groupby-apply.
+    X = X.drop(columns=["RecordID"], errors="ignore")
     X = X.reset_index()
     ICUType = X[["RecordID", "ICUType"]].set_index("RecordID").dropna()
     X = X.drop(["level_1", "ICUType"], axis=1)
 
     # PhysioNet2012 is an imbalanced dataset, hence, we separate positive and negative samples here for later splitting
     # This is to ensure positive and negative ratios are similar in train/val/test sets
-    all_recordID = X["RecordID"].unique()
+    # Cast to numpy array for sklearn compatibility when pandas returns extension arrays (e.g., pyarrow-backed).
+    all_recordID = np.asarray(X["RecordID"].unique())
     positive = (y == 1)["In-hospital_death"]
     positive_sample_IDs = y.loc[positive].index.to_list()
     negative_sample_IDs = np.setxor1d(all_recordID, positive_sample_IDs)
@@ -236,6 +252,16 @@ def preprocess_physionet2012(
         )
     else:
         logger.warning("rate is 0, no missing values are artificially added.")
+
+    processed_dataset = convert_processed_dataset_by_task_type(
+        processed_dataset,
+        task_type=task_type,
+        n_pred_steps=n_pred_steps,
+        forecast_feature_indices=forecast_feature_indices,
+    )
+    train_X = processed_dataset["train_X"]
+    val_X = processed_dataset["val_X"]
+    test_X = processed_dataset["test_X"]
 
     print_final_dataset_info(train_X, val_X, test_X)
     return processed_dataset
