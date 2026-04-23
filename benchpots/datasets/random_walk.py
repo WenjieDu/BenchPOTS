@@ -118,7 +118,7 @@ def gene_complete_random_walk_with_anomalies(
     n_total_steps = n_samples * n_steps
     X = seed.randn(n_total_steps, n_features) * std + mu
     n_anomaly = math.floor(n_total_steps * anomaly_rate)
-    anomaly_indices = np.random.choice(n_total_steps, size=n_anomaly, replace=False)
+    anomaly_indices = seed.choice(n_total_steps, size=n_anomaly, replace=False)
 
     flatten_X = X.flatten()
     min_val = flatten_X.min()
@@ -128,9 +128,9 @@ def gene_complete_random_walk_with_anomalies(
         anomaly_sample = X[a_i]
 
         # which feature to be anomaly
-        feat_idx = np.random.choice(a=n_features, size=1, replace=False)
+        feat_idx = seed.choice(a=n_features, size=1, replace=False)
 
-        anomaly_sample[feat_idx] = mu + np.random.uniform(
+        anomaly_sample[feat_idx] = mu + seed.uniform(
             low=min_val - anomaly_scale_factor * max_difference,
             high=max_val + anomaly_scale_factor * max_difference,
         )
@@ -145,7 +145,7 @@ def gene_complete_random_walk_with_anomalies(
 
     # shuffling
     indices = np.arange(n_samples)
-    np.random.shuffle(indices)
+    seed.shuffle(indices)
     X = X[indices]
     y = y[indices]
 
@@ -243,8 +243,9 @@ def gene_complete_random_walk_for_classification(
 
     # if shuffling, then shuffle the order of samples
     if shuffle:
+        rng = check_random_state(random_state)
         indices = np.arange(len(X))
-        np.random.shuffle(indices)
+        rng.shuffle(indices)
         X = X[indices]
         y = y[indices]
         anomaly_y = anomaly_y[indices] if len(anomaly_y) > 0 else anomaly_y
@@ -260,6 +261,7 @@ def preprocess_random_walk(
     anomaly_rate=0,
     missing_rate=0.1,
     pattern: str = "point",
+    random_state: Optional[int] = None,
     task_type: str = "imputation",
     n_pred_steps: int = 1,
     forecast_feature_indices=None,
@@ -292,6 +294,10 @@ def preprocess_random_walk(
         The missing pattern to apply to the dataset.
         Must be one of ['point', 'subseq', 'block'].
 
+    random_state:
+        Controls the randomness for generated samples and train/validation/test splits.
+        Pass an int for reproducible outputs across runs.
+
     task_type:
         Task type for postprocessing. Supported values are
         ['imputation', 'forecasting', 'classification', 'clustering', 'anomaly_detection'].
@@ -319,19 +325,20 @@ def preprocess_random_walk(
         n_steps=n_steps,
         n_features=n_features,
         anomaly_rate=anomaly_rate,
+        random_state=random_state,
     )
 
     # split into train/val/test sets
     if anomaly_rate > 0:
         train_X, test_X, train_y, test_y, train_anomaly_y, test_anomaly_y = train_test_split(
-            X, y, anomaly_y, test_size=0.2
+            X, y, anomaly_y, test_size=0.2, random_state=random_state
         )
         train_X, val_X, train_y, val_y, train_anomaly_y, val_anomaly_y = train_test_split(
-            train_X, train_y, train_anomaly_y, test_size=0.2
+            train_X, train_y, train_anomaly_y, test_size=0.2, random_state=random_state
         )
     else:
-        train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.2)
-        train_X, val_X, train_y, val_y = train_test_split(train_X, train_y, test_size=0.2)
+        train_X, test_X, train_y, test_y = train_test_split(X, y, test_size=0.2, random_state=random_state)
+        train_X, val_X, train_y, val_y = train_test_split(train_X, train_y, test_size=0.2, random_state=random_state)
 
     if missing_rate > 0:
         # create random missing values

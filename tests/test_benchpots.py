@@ -7,8 +7,11 @@
 
 
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import numpy as np
+import pandas as pd
 import torch
 from pygrinder import calc_missing_rate
 
@@ -18,8 +21,10 @@ from benchpots.datasets import (
     preprocess_physionet2019,
     preprocess_ett,
     preprocess_electricity_load_diagrams,
+    preprocess_pems_traffic,
     preprocess_beijing_air_quality,
     preprocess_italy_air_quality,
+    preprocess_solar_alabama,
     preprocess_ucr_uea_datasets,
     preprocess_nl_benchmarks,
 )
@@ -28,6 +33,121 @@ from benchpots.utils import convert_processed_dataset_by_task_type
 
 
 class TestBenchPOTS(unittest.TestCase):
+    @staticmethod
+    def _build_mock_physionet2012_data(n_records=20):
+        record_ids = np.arange(1000, 1000 + n_records)
+        rows = []
+        for record_id in record_ids:
+            for time in range(48):
+                rows.append(
+                    {
+                        "RecordID": record_id,
+                        "Time": time,
+                        "ICUType": (record_id % 4) + 1,
+                        "Age": 40 + (record_id % 10),
+                        "HR": float(record_id + time),
+                    }
+                )
+
+        set_a = pd.DataFrame(rows)
+        n_positive = n_records // 2
+        n_negative = n_records - n_positive
+        outcomes_a = pd.DataFrame(
+            {"In-hospital_death": [1] * n_positive + [0] * n_negative},
+            index=record_ids,
+        )
+        return {
+            "set-a": set_a,
+            "outcomes-a": outcomes_a,
+            "static_features": ["Age", "ICUType"],
+        }
+
+    @staticmethod
+    def _build_mock_physionet2019_data(n_records=20):
+        record_ids = np.arange(2000, 2000 + n_records)
+        rows = []
+        for record_id in record_ids:
+            for iculos in range(1, 49):
+                rows.append(
+                    {
+                        "RecordID": record_id,
+                        "ICULOS": iculos,
+                        "SepsisLabel": int(record_id % 2),
+                        "Age": 50 + (record_id % 10),
+                        "HR": float(record_id + iculos),
+                    }
+                )
+
+        training_set_a = pd.DataFrame(rows)
+        return {
+            "training_setA": training_set_a,
+            "training_setB": training_set_a.copy(),
+            "static_features": ["Age"],
+        }
+
+    @staticmethod
+    def _build_mock_ucr_uea_data(n_train=20, n_test=8, n_steps=6, n_features=2):
+        X_train = np.repeat(np.arange(n_train, dtype=float).reshape(-1, 1, 1), n_steps * n_features, axis=2).reshape(
+            n_train, n_steps, n_features
+        )
+        X_test = np.repeat(np.arange(n_test, dtype=float).reshape(-1, 1, 1), n_steps * n_features, axis=2).reshape(
+            n_test, n_steps, n_features
+        )
+        y_train = np.arange(n_train)
+        y_test = np.arange(n_test)
+        return {"X_train": X_train, "y_train": y_train, "X_test": X_test, "y_test": y_test}
+
+    @staticmethod
+    def _build_mock_monthly_df_with_index(n_months=24):
+        dates = pd.date_range("2010-01-01", periods=n_months, freq="MS")
+        return pd.DataFrame({"feat": np.arange(n_months, dtype=float)}, index=dates)
+
+    @staticmethod
+    def _build_mock_monthly_df_with_date_col(n_months=24):
+        dates = pd.date_range("2010-01-01", periods=n_months, freq="MS")
+        return pd.DataFrame({"date": dates, "feat": np.arange(n_months, dtype=float)})
+
+    @staticmethod
+    def _build_mock_beijing_data(n_months=40):
+        dates = pd.date_range("2010-01-01", periods=n_months, freq="MS")
+        rows = []
+        for i, date in enumerate(dates):
+            rows.append(
+                {
+                    "year": date.year,
+                    "month": date.month,
+                    "day": date.day,
+                    "hour": 0,
+                    "station": "A",
+                    "wd": "N",
+                    "No": i,
+                    "PM2.5": float(i),
+                }
+            )
+        return {"X": pd.DataFrame(rows)}
+
+    @staticmethod
+    def _build_mock_italy_data(n_rows=60):
+        return {
+            "X": pd.DataFrame(
+                {
+                    "Date": ["01/01/2010"] * n_rows,
+                    "Time": [f"{i % 24:02d}.00.00" for i in range(n_rows)],
+                    "CO(GT)": np.linspace(0.0, 1.0, n_rows),
+                    "NOx(GT)": np.linspace(1.0, 2.0, n_rows),
+                }
+            )
+        }
+
+    @staticmethod
+    def _build_mock_nl_sequence(n_rows=80):
+        return SimpleNamespace(
+            u=np.linspace(0.0, 1.0, n_rows).reshape(-1, 1),
+            y=np.linspace(1.0, 2.0, n_rows).reshape(-1, 1),
+            sampling_time=0.1,
+            state_initialization_window_length=10,
+        )
+
     def test_random_walk(self):
         n_steps = 8
         n_features = 5
@@ -69,6 +189,135 @@ class TestBenchPOTS(unittest.TestCase):
 
     def test_physionet2012(self):
         preprocess_physionet2012(subset="set-a", rate=0.1)
+
+    def test_ucr_uea_split_random_state(self):
+        with patch("benchpots.datasets.ucr_uea_datasets.tsdb.list", return_value=["ucr_uea_mock"]), patch(
+            "benchpots.datasets.ucr_uea_datasets.tsdb.load",
+            side_effect=lambda _: self._build_mock_ucr_uea_data(),
+        ):
+            ds_a = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
+            ds_b = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
+            ds_c = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=7)
+
+        np.testing.assert_array_equal(ds_a["train_y"], ds_b["train_y"])
+        np.testing.assert_array_equal(ds_a["val_y"], ds_b["val_y"])
+        np.testing.assert_array_equal(ds_a["test_y"], ds_b["test_y"])
+        np.testing.assert_array_equal(ds_a["test_y"], ds_c["test_y"])
+        split_changed = not np.array_equal(ds_a["train_y"], ds_c["train_y"]) or not np.array_equal(
+            ds_a["val_y"], ds_c["val_y"]
+        )
+        assert split_changed, "Different random_state values should produce different splits."
+
+    def test_remaining_preprocessors_forward_random_state_to_missingness(self):
+        random_state = 123
+
+        with patch(
+            "benchpots.datasets.beijing_multisite_air_quality.tsdb.load",
+            return_value=self._build_mock_beijing_data(),
+        ), patch(
+            "benchpots.datasets.beijing_multisite_air_quality.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_beijing_air_quality(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.electricity_load_diagrams.tsdb.load",
+            return_value={"X": self._build_mock_monthly_df_with_index(n_months=24)},
+        ), patch(
+            "benchpots.datasets.electricity_load_diagrams.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_electricity_load_diagrams(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.electricity_transformer_temperature.tsdb.load",
+            return_value={"ETTh1": self._build_mock_monthly_df_with_index(n_months=24)},
+        ), patch(
+            "benchpots.datasets.electricity_transformer_temperature.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_ett(subset="ETTh1", rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.italy_air_quality.tsdb.load",
+            return_value=self._build_mock_italy_data(),
+        ), patch(
+            "benchpots.datasets.italy_air_quality.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_italy_air_quality(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.pems_traffic.tsdb.load",
+            return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=24)},
+        ), patch(
+            "benchpots.datasets.pems_traffic.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_pems_traffic(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.solar_alabama.tsdb.load",
+            return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=12)},
+        ), patch(
+            "benchpots.datasets.solar_alabama.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_solar_alabama(rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+        with patch(
+            "benchpots.datasets.nl_benchmarks.nonlinear_benchmarks.EMPS",
+            return_value=(self._build_mock_nl_sequence(), self._build_mock_nl_sequence()),
+        ), patch(
+            "benchpots.datasets.nl_benchmarks.create_missingness",
+            side_effect=lambda X, rate, pattern, **kwargs: X,
+        ) as mock_missing:
+            preprocess_nl_benchmarks(dataset_name="EMPS", rate=0.1, n_steps=1, random_state=random_state)
+            assert len(mock_missing.call_args_list) == 3
+            assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
+
+    def test_random_walk_split_random_state(self):
+        ds_a = preprocess_random_walk(
+            n_steps=8,
+            n_features=3,
+            n_classes=3,
+            n_samples_each_class=40,
+            missing_rate=0,
+            random_state=42,
+        )
+        ds_b = preprocess_random_walk(
+            n_steps=8,
+            n_features=3,
+            n_classes=3,
+            n_samples_each_class=40,
+            missing_rate=0,
+            random_state=42,
+        )
+        ds_c = preprocess_random_walk(
+            n_steps=8,
+            n_features=3,
+            n_classes=3,
+            n_samples_each_class=40,
+            missing_rate=0,
+            random_state=7,
+        )
+
+        np.testing.assert_allclose(ds_a["train_X"], ds_b["train_X"])
+        np.testing.assert_array_equal(ds_a["train_y"], ds_b["train_y"])
+        split_changed = not np.allclose(ds_a["train_X"], ds_c["train_X"])
+        assert split_changed, "Different random_state values should produce different splits."
 
     def test_random_walk_forecasting_shapes(self):
         n_steps = 12
