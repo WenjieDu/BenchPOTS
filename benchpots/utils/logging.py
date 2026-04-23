@@ -7,7 +7,6 @@ Configure logging here.
 
 from pygrinder import calc_missing_rate
 from tsdb.utils.logging import Logger
-from typing import Any
 
 # initialize a logger for PyPOTS logging
 logger_creator = Logger(name="BenchPOTS running log")
