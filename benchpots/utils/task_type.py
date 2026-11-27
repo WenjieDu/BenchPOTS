@@ -3,8 +3,9 @@
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-import numpy as np
 from typing import Iterable, Optional, Sequence, Union
+
+import numpy as np
 
 SUPPORTED_TASK_TYPES = (
     "imputation",

@@ -3,7 +3,6 @@
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-
 # BenchPOTS version
 #
 # PEP0440 compatible formatted version, see:
