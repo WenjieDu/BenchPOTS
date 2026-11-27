@@ -6,7 +6,6 @@ Preprocessing func for the generated random walk dataset.
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-
 import math
 from typing import Any, Optional, Sequence, Tuple, Union
 

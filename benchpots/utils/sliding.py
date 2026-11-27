@@ -52,8 +52,7 @@ def sliding_window(
 
     # check input
     assert len(time_series) > window_size, (
-        f"time_series length {len(time_series)} is less than "
-        f"window_size {window_size}. There is no space for sliding."
+        f"time_series length {len(time_series)} is less than window_size {window_size}. There is no space for sliding."
     )
     assert stride > 0 and window_size > 0, f"stride {stride} and window_size {window_size} must be positive"
     assert stride <= window_size, (

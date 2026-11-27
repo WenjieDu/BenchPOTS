@@ -1,0 +1,62 @@
+name: Nightly Compatibility Testing
+
+on:
+    schedule:
+        - cron: '0 2 * * *'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    compatibility:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ['3.11', '3.12', '3.13']
+
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
+                  persist-credentials: false
+
+            - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+              with:
+                  python-version: ${{ matrix.python-version }}
+                  check-latest: true
+                  cache: pip
+                  cache-dependency-path: requirements/requirements.txt
+
+            - name: Install Python 3.11 numerical dependencies
+              if: matrix.python-version == '3.11'
+              run: |
+                  python -m pip install --only-binary=:all: "numpy==2.4.6" "scipy==1.17.1"
+
+            - name: Install Python 3.12+ numerical dependencies
+              if: matrix.python-version != '3.11'
+              run: |
+                  python -m pip install --only-binary=:all: "numpy==2.5.5" "scipy==1.18.1"
+
+            - name: Install common dependencies
+              run: >-
+                  python -m pip install --only-binary=:all: "h5py==3.16.0" "pandas==2.3.3" "scikit-learn==1.7.2"
+                  "torch==2.14.1" "tsdb==1.0.0rc1" "pygrinder==0.7" "rarfile==4.5" "requests==2.34.2" "tqdm==4.70.1"
+                  "progressbar2==4.7.1"
+
+            - name: Install nonlinear benchmarks without legacy progressbar dependency
+              run: |
+                  python -m pip install --only-binary=:all: --no-deps "nonlinear_benchmarks==1.0.1"
+
+            - name: Run compatibility smoke
+              run: >-
+                  python -c "import benchpots, tsdb; from benchpots.datasets import preprocess_random_walk;
+                  assert tsdb.__version__ == '1.0.0rc1';
+                  data=preprocess_random_walk(n_steps=8,n_features=3,n_classes=2,n_samples_each_class=20,missing_rate=0.1);
+                  assert data['train_X'].shape[-2:]==(8,3)"

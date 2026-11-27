@@ -3,7 +3,6 @@
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -14,20 +13,19 @@ import torch
 from pygrinder import calc_missing_rate
 
 from benchpots.datasets import (
-    preprocess_random_walk,
+    preprocess_beijing_air_quality,
+    preprocess_electricity_load_diagrams,
+    preprocess_ett,
+    preprocess_italy_air_quality,
+    preprocess_nl_benchmarks,
+    preprocess_pems_traffic,
     preprocess_physionet2012,
     preprocess_physionet2019,
-    preprocess_ett,
-    preprocess_electricity_load_diagrams,
-    preprocess_pems_traffic,
-    preprocess_beijing_air_quality,
-    preprocess_italy_air_quality,
+    preprocess_random_walk,
     preprocess_solar_alabama,
     preprocess_ucr_uea_datasets,
-    preprocess_nl_benchmarks,
 )
-from benchpots.utils import sliding_window, inverse_sliding_window
-from benchpots.utils import convert_processed_dataset_by_task_type
+from benchpots.utils import convert_processed_dataset_by_task_type, inverse_sliding_window, sliding_window
 
 
 class TestBenchPOTS(unittest.TestCase):
@@ -189,9 +187,12 @@ class TestBenchPOTS(unittest.TestCase):
         preprocess_physionet2012(subset="set-a", rate=0.1)
 
     def test_ucr_uea_split_random_state(self):
-        with patch("benchpots.datasets.ucr_uea_datasets.tsdb.list", return_value=["ucr_uea_mock"]), patch(
-            "benchpots.datasets.ucr_uea_datasets.tsdb.load",
-            side_effect=lambda _: self._build_mock_ucr_uea_data(),
+        with (
+            patch("benchpots.datasets.ucr_uea_datasets.tsdb.list", return_value=["ucr_uea_mock"]),
+            patch(
+                "benchpots.datasets.ucr_uea_datasets.tsdb.load",
+                side_effect=lambda _: self._build_mock_ucr_uea_data(),
+            ),
         ):
             ds_a = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
             ds_b = preprocess_ucr_uea_datasets(dataset_name="ucr_uea_mock", rate=0, random_state=42)
@@ -209,79 +210,100 @@ class TestBenchPOTS(unittest.TestCase):
     def test_remaining_preprocessors_forward_random_state_to_missingness(self):
         random_state = 123
 
-        with patch(
-            "benchpots.datasets.beijing_multisite_air_quality.tsdb.load",
-            return_value=self._build_mock_beijing_data(),
-        ), patch(
-            "benchpots.datasets.beijing_multisite_air_quality.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.beijing_multisite_air_quality.tsdb.load",
+                return_value=self._build_mock_beijing_data(),
+            ),
+            patch(
+                "benchpots.datasets.beijing_multisite_air_quality.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_beijing_air_quality(rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
-        with patch(
-            "benchpots.datasets.electricity_load_diagrams.tsdb.load",
-            return_value={"X": self._build_mock_monthly_df_with_index(n_months=24)},
-        ), patch(
-            "benchpots.datasets.electricity_load_diagrams.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.electricity_load_diagrams.tsdb.load",
+                return_value={"X": self._build_mock_monthly_df_with_index(n_months=24)},
+            ),
+            patch(
+                "benchpots.datasets.electricity_load_diagrams.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_electricity_load_diagrams(rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
-        with patch(
-            "benchpots.datasets.electricity_transformer_temperature.tsdb.load",
-            return_value={"ETTh1": self._build_mock_monthly_df_with_index(n_months=24)},
-        ), patch(
-            "benchpots.datasets.electricity_transformer_temperature.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.electricity_transformer_temperature.tsdb.load",
+                return_value={"ETTh1": self._build_mock_monthly_df_with_index(n_months=24)},
+            ),
+            patch(
+                "benchpots.datasets.electricity_transformer_temperature.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_ett(subset="ETTh1", rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
-        with patch(
-            "benchpots.datasets.italy_air_quality.tsdb.load",
-            return_value=self._build_mock_italy_data(),
-        ), patch(
-            "benchpots.datasets.italy_air_quality.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.italy_air_quality.tsdb.load",
+                return_value=self._build_mock_italy_data(),
+            ),
+            patch(
+                "benchpots.datasets.italy_air_quality.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_italy_air_quality(rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
-        with patch(
-            "benchpots.datasets.pems_traffic.tsdb.load",
-            return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=24)},
-        ), patch(
-            "benchpots.datasets.pems_traffic.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.pems_traffic.tsdb.load",
+                return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=24)},
+            ),
+            patch(
+                "benchpots.datasets.pems_traffic.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_pems_traffic(rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
-        with patch(
-            "benchpots.datasets.solar_alabama.tsdb.load",
-            return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=12)},
-        ), patch(
-            "benchpots.datasets.solar_alabama.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.solar_alabama.tsdb.load",
+                return_value={"X": self._build_mock_monthly_df_with_date_col(n_months=12)},
+            ),
+            patch(
+                "benchpots.datasets.solar_alabama.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_solar_alabama(rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
 
-        with patch(
-            "benchpots.datasets.nl_benchmarks.nonlinear_benchmarks.EMPS",
-            return_value=(self._build_mock_nl_sequence(), self._build_mock_nl_sequence()),
-        ), patch(
-            "benchpots.datasets.nl_benchmarks.create_missingness",
-            side_effect=lambda X, rate, pattern, **kwargs: X,
-        ) as mock_missing:
+        with (
+            patch(
+                "benchpots.datasets.nl_benchmarks.nonlinear_benchmarks.EMPS",
+                return_value=(self._build_mock_nl_sequence(), self._build_mock_nl_sequence()),
+            ),
+            patch(
+                "benchpots.datasets.nl_benchmarks.create_missingness",
+                side_effect=lambda X, rate, pattern, **kwargs: X,
+            ) as mock_missing,
+        ):
             preprocess_nl_benchmarks(dataset_name="EMPS", rate=0.1, n_steps=1, random_state=random_state)
             assert len(mock_missing.call_args_list) == 3
             assert all(call.kwargs.get("random_state") == random_state for call in mock_missing.call_args_list)
