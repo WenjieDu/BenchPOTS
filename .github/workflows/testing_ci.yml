@@ -58,21 +58,10 @@ jobs:
                   python -m pip install --only-binary=:all: "numpy==2.5.5" "scipy==1.18.1"
 
             - name: Install common dependencies
-              run: |
-                  python -m pip install --only-binary=:all: \
-                    "h5py==3.16.0" \
-                    "pandas==2.3.3" \
-                    "scikit-learn==1.7.2" \
-                    "torch==2.14.1" \
-                    "tsdb==0.8" \
-                    "pygrinder==0.7" \
-                    "rarfile==4.5" \
-                    "requests==2.34.2" \
-                    "tqdm==4.70.1" \
-                    "progressbar2==4.7.1" \
-                    "pytest==9.0.3" \
-                    "pytest-cov==7.0.0" \
-                    "coverage==7.12.0"
+              run: >-
+                  python -m pip install --only-binary=:all: "h5py==3.16.0" "pandas==2.3.3" "scikit-learn==1.7.2"
+                  "torch==2.14.1" "tsdb==0.8" "pygrinder==0.7" "rarfile==4.5" "requests==2.34.2" "tqdm==4.70.1"
+                  "progressbar2==4.7.1" "pytest==9.0.3" "pytest-cov==7.0.0" "coverage==7.12.0"
 
             - name: Install nonlinear benchmarks without legacy progressbar dependency
               run: |
