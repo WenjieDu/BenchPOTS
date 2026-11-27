@@ -18,10 +18,10 @@ jobs:
       contents: read
 
     steps:
-    - uses: actions/first-interaction@v3
+    - uses: actions/first-interaction@1c4688942c71f71d4f5502a26ea67c331730fa4d # v3
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        issue-message: |
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        issue_message: |
           Hi there 👋,
 
           Thank you so much for your attention to BenchPOTS! You can follow me on GitHub to get updates on PyPOTS.
@@ -34,7 +34,7 @@ jobs:
 
           Best,
           Wenjie
-        pr-message: |
+        pr_message: |
           Hi there 👋,
 
           We really appreciate that you have taken the time to make this PR on BenchPOTS!
