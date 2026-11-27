@@ -5,7 +5,7 @@
 
 from .logging import print_final_dataset_info
 from .missingness import create_missingness
-from .sliding import sliding_window, inverse_sliding_window
+from .sliding import inverse_sliding_window, sliding_window
 from .task_type import convert_processed_dataset_by_task_type
 
 __all__ = [

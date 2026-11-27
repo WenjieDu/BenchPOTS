@@ -93,9 +93,7 @@ def preprocess_beijing_air_quality(
     ]
     feature_num = len(feature_names)
     df.columns = feature_names
-    logger.info(
-        f"Original df missing rate: " f"{(df[feature_names].isna().sum().sum() / (df.shape[0] * feature_num)):.3f}"
-    )
+    logger.info(f"Original df missing rate: {(df[feature_names].isna().sum().sum() / (df.shape[0] * feature_num)):.3f}")
 
     df["date_time"] = date_time
     unique_months = df["date_time"].dt.to_period("M").unique()

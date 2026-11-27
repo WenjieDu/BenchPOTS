@@ -7,13 +7,13 @@ from .beijing_multisite_air_quality import preprocess_beijing_air_quality
 from .electricity_load_diagrams import preprocess_electricity_load_diagrams
 from .electricity_transformer_temperature import preprocess_ett
 from .italy_air_quality import preprocess_italy_air_quality
+from .nl_benchmarks import preprocess_nl_benchmarks
 from .pems_traffic import preprocess_pems_traffic
 from .physionet_2012 import preprocess_physionet2012
 from .physionet_2019 import preprocess_physionet2019
-from .ucr_uea_datasets import preprocess_ucr_uea_datasets
-from .solar_alabama import preprocess_solar_alabama
 from .random_walk import preprocess_random_walk
-from .nl_benchmarks import preprocess_nl_benchmarks
+from .solar_alabama import preprocess_solar_alabama
+from .ucr_uea_datasets import preprocess_ucr_uea_datasets
 
 __all__ = [
     "preprocess_physionet2012",

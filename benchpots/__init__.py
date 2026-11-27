@@ -6,7 +6,7 @@ supporting processing pipelines of 170+ public time-series datasets
 # Created by Wenjie Du <wenjay.du@gmail.com>
 # License: BSD-3-Clause
 
-from . import utils, datasets
+from . import datasets, utils
 from .version import __version__
 
 __all__ = [

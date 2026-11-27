@@ -8,7 +8,7 @@
 
 <p align="center">
     <a href="https://docs.pypots.com/en/latest/install.html#reasons-of-version-limitations-on-dependencies">
-       <img alt="Python version" src="https://img.shields.io/badge/Python-v3.8+-E97040?logo=python&logoColor=white">
+       <img alt="Python version" src="https://img.shields.io/badge/Python-3.10%2B-E97040?logo=python&logoColor=white">
     </a>
     <a href="https://github.com/WenjieDu/BenchPOTS/releases">
         <img alt="the latest release version" src="https://img.shields.io/github/v/release/wenjiedu/benchpots?color=EE781F&include_prereleases&label=Release&logo=github&logoColor=white">
@@ -55,12 +55,12 @@ It supports a variety of evaluation tasks to help users understand the performan
 
 ## ❖ Usage Examples
 > [!IMPORTANT]
-> BenchPOTS is available on both <a alt='PyPI' href='https://pypi.python.org/pypi/benchpots'><img align='center' src='https://img.shields.io/badge/PyPI--lightgreen?style=social&logo=pypi'></a> 
+> BenchPOTS requires Python 3.10 or newer and is available on both <a alt='PyPI' href='https://pypi.org/project/benchpots/'><img align='center' src='https://img.shields.io/badge/PyPI--lightgreen?style=social&logo=pypi'></a>
 > and <a alt='Anaconda' href='https://anaconda.org/conda-forge/benchpots'><img align='center' src='https://img.shields.io/badge/Anaconda--lightgreen?style=social&logo=anaconda'></a>❗️
-> 
+>
 > Install via pip:
 > > pip install benchpots
-> 
+>
 > or install from source code:
 > > pip install `https://github.com/WenjieDu/BenchPOTS/archive/main.zip`
 >
@@ -70,7 +70,7 @@ It supports a variety of evaluation tasks to help users understand the performan
 ```python
 import benchpots
 
-# Load PhysioNet2012 all three subsets and apply MCAR with 0.1 rate 
+# Load PhysioNet2012 all three subsets and apply MCAR with 0.1 rate
 benchpots.datasets.preprocess_physionet2012(subset="all", rate=0.1)
 
 ```
@@ -104,4 +104,3 @@ or
 > Wenjie Du.
 > PyPOTS: a Python toolbox for data mining on Partially-Observed Time Series.
 > arXiv, abs/2305.18811, 2023.
-

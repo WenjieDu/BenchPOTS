@@ -11,7 +11,7 @@ from typing import Any, Optional, Sequence, Union
 import tsdb
 from pandas.api.types import is_string_dtype
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from ..utils.logging import logger, print_final_dataset_info
 from ..utils.missingness import create_missingness
